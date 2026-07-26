@@ -28,6 +28,7 @@ function uid() {
 }
 
 const ENTRY_TYPES = {
+  goal: { glyph: "✦", label: "Goal" },
   task: { glyph: "•", label: "Task" },
   event: { glyph: "○", label: "Event" },
   note: { glyph: "–", label: "Note" },
@@ -180,7 +181,7 @@ function isoFor(year, monthIndex, day) {
 // The date a given entry is "filed under" for Index / Future / Monthly views
 function entryRelevantDate(entry) {
   if (entry.type === "event" && entry.eventDate) return entry.eventDate;
-  if (entry.type === "task" && entry.dueDate) return entry.dueDate;
+  if ((entry.type === "task" || entry.type === "goal") && entry.dueDate) return entry.dueDate;
   return toISODate(new Date(entry.createdAt));
 }
 
@@ -191,8 +192,8 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState(() => {
     const param = new URLSearchParams(window.location.search).get("view");
-    return ["index", "future", "monthly", "daily"].includes(param) ? param : "daily";
-  }); // 'index' | 'future' | 'monthly' | 'daily'
+    return ["index", "future", "monthly", "weekly", "daily"].includes(param) ? param : "daily";
+  }); // 'index' | 'future' | 'monthly' | 'weekly' | 'daily'
   const [monthOffset, setMonthOffset] = useState(0);
   const [dragEntryId, setDragEntryId] = useState(null);
   const [saveError, setSaveError] = useState(false);
@@ -342,7 +343,7 @@ export default function App() {
     );
   }
 
-  const pageTitles = { index: "Index", future: "Future Log", monthly: "Monthly Log", daily: "Daily Log" };
+  const pageTitles = { index: "Index", future: "Future Log", monthly: "Monthly Log", weekly: "Weekly Log", daily: "Daily Log" };
 
   return (
     <div className="app-shell" style={{ background: C.paper, color: C.ink, fontFamily: fontBody }}>
@@ -360,6 +361,18 @@ export default function App() {
               deleteEntry={deleteEntry}
               monthOffset={monthOffset}
               setMonthOffset={setMonthOffset}
+            />
+          )}
+          {view === "weekly" && (
+            <WeeklyLogPage
+              entries={entries}
+              addEntry={addEntry}
+              toggleEntryDone={toggleEntryDone}
+              deleteEntry={deleteEntry}
+              updateEntry={updateEntry}
+              scheduleEntry={scheduleEntry}
+              dragEntryId={dragEntryId}
+              setDragEntryId={setDragEntryId}
             />
           )}
           {view === "daily" && (
@@ -412,6 +425,7 @@ const NAV_ITEMS = [
   { id: "index", label: "Index", glyph: "≡" },
   { id: "future", label: "Future Log", glyph: "→" },
   { id: "monthly", label: "Monthly Log", glyph: "▦" },
+  { id: "weekly", label: "Weekly Log", glyph: "▤" },
   { id: "daily", label: "Daily Log", glyph: "•" },
 ];
 
@@ -528,7 +542,7 @@ function FutureLogPage({ entries, addEntry }) {
 
   function itemsForMonth(key) {
     return entries
-      .filter((e) => (e.type === "task" || e.type === "event") && entryRelevantDate(e).startsWith(key))
+      .filter((e) => (e.type === "task" || e.type === "goal" || e.type === "event") && entryRelevantDate(e).startsWith(key))
       .sort((a, b) => entryRelevantDate(a).localeCompare(entryRelevantDate(b)));
   }
 
@@ -629,10 +643,10 @@ function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, month
 
   function dayItems(day) {
     const iso = isoFor(info.year, info.monthIndex, day);
-    return entries.filter((e) => (e.type === "event" && e.eventDate === iso) || (e.type === "task" && e.dueDate === iso));
+    return entries.filter((e) => (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso));
   }
 
-  const brainDump = entries.filter((e) => e.type === "task" && !e.done && (!e.dueDate || e.dueDate.startsWith(info.key)));
+  const brainDump = entries.filter((e) => (e.type === "task" || e.type === "goal") && !e.done && (!e.dueDate || e.dueDate.startsWith(info.key)));
 
   async function submitDay(day) {
     if (!dayDraft.text.trim()) return;
@@ -710,7 +724,7 @@ function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, month
                 {isOpen && (
                   <div style={{ padding: "0 12px 12px 62px", display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                     <div style={{ display: "flex", gap: 4 }}>
-                      {["event", "task"].map((t) => (
+                      {["event", "task", "goal"].map((t) => (
                         <button
                           key={t}
                           onClick={() => setDayDraft((d) => ({ ...d, type: t }))}
@@ -956,7 +970,7 @@ function Journal({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry,
           </div>
         )}
 
-        {type === "task" && (
+        {(type === "task" || type === "goal") && (
           <div style={{ marginBottom: 10, maxWidth: 200 }}>
             <label style={fieldLabelStyle} htmlFor="due-date">Due date (optional)</label>
             <input id="due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={fieldInputStyle} />
@@ -1010,7 +1024,7 @@ function Journal({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry,
             The page is blank. Write down what's on your mind.
           </li>
         )}
-        {entries.map((entry) => (
+        {[...entries].sort((a,b) => (a.type==='goal'?0:1) - (b.type==='goal'?0:1)).map((entry) => (
           <EntryRow
             key={entry.id}
             entry={entry}
@@ -1041,7 +1055,7 @@ function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDragStart, 
   const inputRef = useRef(null);
   const meta = ENTRY_TYPES[entry.type] ?? ENTRY_TYPES.note;
   const signifierMeta = SIGNIFIERS[entry.signifier || "none"];
-  const draggable = (entry.type === "task" || entry.type === "event") && !entry.scheduledBlockId;
+  const draggable = (entry.type === "task" || entry.type === "goal" || entry.type === "event") && !entry.scheduledBlockId;
 
   useEffect(() => {
     if (isEditing) inputRef.current?.focus();
@@ -1074,7 +1088,7 @@ function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDragStart, 
     onSave({
       text: trimmed,
       signifier: draft.signifier === "none" ? null : draft.signifier,
-      dueDate: entry.type === "task" ? draft.dueDate || null : entry.dueDate,
+      dueDate: (entry.type === "task" || entry.type === "goal") ? draft.dueDate || null : entry.dueDate,
       eventDate: entry.type === "event" ? draft.eventDate || null : entry.eventDate,
       eventTime: entry.type === "event" ? draft.eventTime || null : entry.eventTime,
       eventLocation: entry.type === "event" ? draft.eventLocation || null : entry.eventLocation,
@@ -1091,7 +1105,7 @@ function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDragStart, 
     metaLine.push(formatDateShort(entry.eventDate) + (entry.eventTime ? ` · ${formatTimeShort(entry.eventTime)}` : ""));
   }
   if (entry.type === "event" && entry.eventLocation) metaLine.push(entry.eventLocation);
-  if (entry.type === "task" && entry.dueDate) metaLine.push(`Due ${formatDateShort(entry.dueDate)}`);
+  if ((entry.type === "task" || entry.type === "goal") && entry.dueDate) metaLine.push(`Due ${formatDateShort(entry.dueDate)}`);
 
   return (
     <li
@@ -1167,7 +1181,7 @@ function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDragStart, 
             </div>
           )}
 
-          {entry.type === "task" && (
+          {(entry.type === "task" || entry.type === "goal") && (
             <div style={{ maxWidth: 180 }}>
               <label style={fieldLabelStyle}>Due date</label>
               <input type="date" value={draft.dueDate} onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))} style={fieldInputStyle} />
@@ -1449,6 +1463,156 @@ function DayAgenda({ entries, blocks, scheduleEntry, unscheduleBlock, resizeBloc
             );
           })}
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ================= Weekly Log =================
+function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry, dragEntryId, setDragEntryId, scheduleEntry }) {
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const days = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    today.setDate(today.getDate() + (weekOffset * 7));
+    
+    // Create [Today-2, Today-1, Today, Today+1, Today+2]
+    return [-2, -1, 0, 1, 2].map(offset => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + offset);
+      return d;
+    });
+  }, [weekOffset]);
+
+  const [openDay, setOpenDay] = useState(null);
+  const [dayDraft, setDayDraft] = useState({ text: "", type: "task", time: "" });
+
+  function dayItems(date) {
+    const iso = toISODate(date);
+    return [...entries].filter((e) => (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso))
+      .sort((a, b) => (a.type === 'goal' ? 0 : 1) - (b.type === 'goal' ? 0 : 1));
+  }
+
+  async function submitDay(date) {
+    if (!dayDraft.text.trim()) return;
+    const iso = toISODate(date);
+    await addEntry(dayDraft.text.trim(), dayDraft.type, dayDraft.type === "event" ? { eventDate: iso, eventTime: dayDraft.time || null } : { dueDate: iso });
+    setDayDraft({ text: "", type: "task", time: "" });
+    setOpenDay(null);
+  }
+
+  return (
+    <section aria-label="Weekly Log">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <h2 style={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: 17, margin: 0 }}>
+          Week of {days[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – {days[4].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={() => setWeekOffset((n) => n - 1)} aria-label="Previous week" style={navBtnStyle}>‹</button>
+          <button
+            onClick={() => setWeekOffset(0)}
+            aria-label="Go to this week"
+            disabled={weekOffset === 0}
+            style={{ ...navBtnStyle, width: "auto", padding: "0 10px", opacity: weekOffset === 0 ? 0.35 : 1, cursor: weekOffset === 0 ? "default" : "pointer" }}
+          >
+            Current
+          </button>
+          <button onClick={() => setWeekOffset((n) => n + 1)} aria-label="Next week" style={navBtnStyle}>›</button>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        {days.map((date, idx) => {
+          const iso = toISODate(date);
+          const isToday = iso === toISODate(new Date());
+          const isOpen = openDay === iso;
+          const items = dayItems(date);
+          
+          return (
+            <div key={iso} style={{ border: `1px solid ${isToday ? C.accent : C.rule}`, borderRadius: 8, background: isToday ? "rgba(38,54,92,0.02)" : "rgba(255,255,255,0.4)", display: "flex", flexDirection: "column", minHeight: 300 }}>
+              <div style={{ padding: "12px", borderBottom: `1px solid ${C.rule}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontFamily: fontMono, fontSize: 10, textTransform: "uppercase", color: isToday ? C.accent : C.inkFaint }}>
+                    {date.toLocaleDateString(undefined, { weekday: "long" })}
+                  </div>
+                  <div style={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: 15, color: isToday ? C.accent : C.ink }}>
+                    {date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setOpenDay(isOpen ? null : iso)}
+                  style={{ fontFamily: fontMono, fontSize: 16, color: C.inkFaint, background: "none", border: "none", cursor: "pointer", padding: "0 4px" }}
+                >
+                  {isOpen ? "×" : "+"}
+                </button>
+              </div>
+              
+              <div style={{ flex: 1, padding: "8px", display: "flex", flexDirection: "column", gap: 4 }}>
+                {isOpen && (
+                  <div style={{ padding: "8px", background: "rgba(255,255,255,0.6)", borderRadius: 6, border: `1px solid ${C.rule}`, marginBottom: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {["event", "task", "goal"].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setDayDraft((d) => ({ ...d, type: t }))}
+                          style={{
+                            fontFamily: fontMono, fontSize: 10, padding: "2px 6px", borderRadius: 999,
+                            border: `1px solid ${dayDraft.type === t ? C.ink : C.rule}`,
+                            background: dayDraft.type === t ? C.ink : "transparent",
+                            color: dayDraft.type === t ? C.paper : C.inkSoft, cursor: "pointer"
+                          }}
+                        >
+                          {ENTRY_TYPES[t].glyph}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      value={dayDraft.text}
+                      onChange={(e) => setDayDraft((d) => ({ ...d, text: e.target.value }))}
+                      onKeyDown={(e) => e.key === "Enter" && submitDay(date)}
+                      placeholder="Add item..."
+                      style={{ ...fieldInputStyle, padding: "4px 8px", fontSize: 12 }}
+                    />
+                    {dayDraft.type === "event" && (
+                      <input
+                        type="time"
+                        value={dayDraft.time}
+                        onChange={(e) => setDayDraft((d) => ({ ...d, time: e.target.value }))}
+                        style={{ ...fieldInputStyle, padding: "4px 8px", fontSize: 12 }}
+                      />
+                    )}
+                    <button
+                      onClick={() => submitDay(date)}
+                      disabled={!dayDraft.text.trim()}
+                      style={{ fontFamily: fontMono, fontSize: 10, textTransform: "uppercase", padding: "4px", borderRadius: 4, border: "none", background: C.accent, color: C.paper, cursor: "pointer", opacity: dayDraft.text.trim() ? 1 : 0.4 }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
+                
+                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                  {items.length === 0 && !isOpen && (
+                    <li style={{ fontFamily: fontBody, fontSize: 12, color: C.inkFaint, fontStyle: "italic", textAlign: "center", padding: "16px 0" }}>Empty</li>
+                  )}
+                  {items.map((entry) => (
+                    <EntryRow
+                      key={entry.id}
+                      entry={entry}
+                      onToggle={() => toggleEntryDone(entry)}
+                      onDelete={() => deleteEntry(entry)}
+                      onSave={(patch) => updateEntry(entry, patch)}
+                      isDragging={dragEntryId === entry.id}
+                      onDragStart={() => setDragEntryId(entry.id)}
+                      onDragEnd={() => setDragEntryId(null)}
+                    />
+                  ))}
+                </ul>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

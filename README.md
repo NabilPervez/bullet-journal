@@ -57,6 +57,10 @@ rather than quietly replacing it.
 
 ## The screens
 
+Four destinations along the bottom on a phone, down the left on a desktop: **Future**, **Month**,
+**Week** and **Today**. The nav is part of the app shell, so it is always on screen — only the
+content between the header and the nav scrolls.
+
 ### Today
 Your day, in two halves.
 
@@ -72,11 +76,11 @@ dump: the month's open tasks and goals, and a box to throw new ones into.
 ### Week
 Five days side by side — swipe between them on a phone. Each day can be added to in place.
 
-### Index
-Where things are.
+### Future
+Where things are, starting with what hasn't happened yet.
 
-- **Logged** — one row per month you've written in, with a breakdown and a way straight to it.
 - **Ahead** — the next twelve months. Add something with a date and it lands in the right month.
+- **Logged** — one row per month you've written in, with a breakdown and a way straight to it.
 
 ### Settings
 Behind the ⚙ in the header: theme, your journal's data (export and import), a reminder of the
@@ -102,8 +106,8 @@ right to complete and left to delete — a deletion always offers an undo for fi
 Once it's there: drag the block to move it, drag its bottom edge to change the length (it snaps to
 15 minutes), or focus it and use the arrow keys — Delete takes it off the calendar.
 
-**Review.** At the end of a month, open the Index. *Logged* shows what the month contained; *Ahead*
-shows what's still coming. Anything still open is a decision: do it, schedule it, or let it go.
+**Review.** At the end of a month, open Future. *Ahead* shows what's still coming; *Logged* shows
+what each month contained. Anything still open is a decision: do it, schedule it, or let it go.
 
 **Keep a copy.** Settings → Export JSON gives you the whole journal, and Import brings it back.
 Export Markdown gives you a readable file with tasks as checkboxes. Clearing your browser's site
@@ -172,6 +176,9 @@ is darkened in the Day theme where the fill colour would be unreadable as type.
 - 46px is the minimum for anything a finger meets (44 for the small variants on touch). An icon is a
   circle with a surface, never a bare glyph.
 - `env(safe-area-inset-bottom)` is respected by the bottom nav; don't give it a flat height.
+- The app shell is exactly one viewport tall and `.app-main` is the only scroll region. `html` and
+  `body` are `overflow: hidden` with `overscroll-behavior: none`, so the page can't be panned or
+  rubber-banded, and the nav can't scroll out of view. Don't reintroduce document-level scrolling.
 - Dragging uses Pointer Events, never the HTML5 drag-and-drop API, which mobile browsers don't fire.
 - Anything you can do by dragging must also be doable by keyboard.
 - Motion is short and purposeful, and all of it is disabled under `prefers-reduced-motion`.

@@ -1,7 +1,7 @@
-// Four destinations. The Future Log used to have its own tab; it is a way of
-// looking at what's ahead, so it lives inside the Index next to what's behind.
+// Four destinations. What's ahead leads, with the index of what has already
+// been logged behind it on the same screen.
 const NAV_ITEMS = [
-  { id: "index", label: "Index", glyph: "≡" },
+  { id: "index", label: "Future", glyph: "→" },
   { id: "monthly", label: "Month", glyph: "▦" },
   { id: "weekly", label: "Week", glyph: "▤" },
   { id: "daily", label: "Today", glyph: "•" },

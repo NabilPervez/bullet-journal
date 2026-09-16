@@ -3,10 +3,11 @@ import { countByType, entryRelevantDate, ENTRY_TYPES, summarizeCounts } from "..
 import { monthLabelFromKey } from "../lib/dates";
 import { FutureLog } from "./FutureLogPage";
 
-// The Index and the Future Log answer the same question from two directions —
-// "where is everything?" — so they live on one page behind a switch.
-export function IndexPage({ entries, addEntry, onJumpToMonth, initialTab = "index" }) {
-  const [tab, setTab] = useState(initialTab === "future" ? "future" : "index");
+// What's ahead and what has been logged answer the same question from two
+// directions — "where is everything?" — so they live on one page behind a
+// switch, with what's coming first.
+export function IndexPage({ entries, addEntry, onJumpToMonth, initialTab = "future" }) {
+  const [tab, setTab] = useState(initialTab === "index" ? "index" : "future");
 
   const grouped = useMemo(() => {
     // Group by month, then count from ENTRY_TYPES so a newly added type shows
@@ -23,11 +24,11 @@ export function IndexPage({ entries, addEntry, onJumpToMonth, initialTab = "inde
   }, [entries]);
 
   return (
-    <section aria-label="Index" className="stack gap-5" style={{ maxWidth: 760 }}>
-      <div className="seg" role="tablist" aria-label="Index and future log">
+    <section aria-label="Future and index" className="stack gap-5" style={{ maxWidth: 760 }}>
+      <div className="seg" role="tablist" aria-label="Future log and index">
         {[
-          ["index", "Logged"],
           ["future", "Ahead"],
+          ["index", "Logged"],
         ].map(([id, label]) => (
           <button key={id} role="tab" className="seg-item" aria-selected={tab === id} onClick={() => setTab(id)}>
             {label}

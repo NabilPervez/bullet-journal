@@ -27,7 +27,6 @@ export default function App() {
     return VIEWS.includes(param) ? param : "daily";
   });
   const [monthOffset, setMonthOffset] = useState(0);
-  const [dragEntryId, setDragEntryId] = useState(null);
 
   // Load once, run any pending schema migration, then hand the result to the
   // reducer. Nothing else reads or writes storage.
@@ -114,6 +113,19 @@ export default function App() {
     dispatch({ type: "resize-block", blockId: block.id, durationMinutes });
   }, []);
 
+  // An imported journal goes through the same migration path as a stored
+  // one, so an old export opens in a new version of the app.
+  const importJournal = useCallback((parsed) => {
+    const migrated = migrate({ entries: parsed.entries, blocks: parsed.blocks }, parsed.version);
+    dispatch({
+      type: "hydrate",
+      entries: migrated.entries,
+      blocks: migrated.blocks,
+      version: migrated.version,
+      readonly: false,
+    });
+  }, []);
+
   function jumpToMonth(key) {
     setMonthOffset(monthOffsetFromKey(key));
     setView("monthly");
@@ -140,7 +152,15 @@ export default function App() {
           onRetrySave={retrySave}
         />
         <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px 32px" }}>
-          {view === "index" && <IndexPage entries={entries} onJumpToMonth={jumpToMonth} />}
+          {view === "index" && (
+            <IndexPage
+              entries={entries}
+              blocks={blocks}
+              version={version || SCHEMA_VERSION}
+              onJumpToMonth={jumpToMonth}
+              onImport={importJournal}
+            />
+          )}
           {view === "future" && <FutureLogPage entries={entries} addEntry={addEntry} />}
           {view === "monthly" && (
             <MonthlyLogPage
@@ -159,8 +179,6 @@ export default function App() {
               toggleEntryDone={toggleEntryDone}
               deleteEntry={deleteEntry}
               updateEntry={updateEntry}
-              dragEntryId={dragEntryId}
-              setDragEntryId={setDragEntryId}
             />
           )}
           {view === "daily" && (
@@ -175,8 +193,6 @@ export default function App() {
               unscheduleBlock={unscheduleBlock}
               resizeBlock={resizeBlock}
               moveBlock={moveBlock}
-              dragEntryId={dragEntryId}
-              setDragEntryId={setDragEntryId}
             />
           )}
         </main>

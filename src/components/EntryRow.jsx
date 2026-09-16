@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { ENTRY_TYPES, SIGNIFIERS } from "../lib/model";
+import { ENTRY_TYPES, SIGNIFIERS, isSchedulable } from "../lib/model";
 import { formatDateShort, formatTimeShort } from "../lib/dates";
 import { C, fieldInputStyle, fieldLabelStyle, fontBody, fontDisplay, fontMono } from "../theme";
 
-export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDragStart, onDragEnd }) {
+export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStartDrag, onSchedule }) {
   const [hover, setHover] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(() => ({
@@ -17,17 +17,15 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDrag
   const inputRef = useRef(null);
   const meta = ENTRY_TYPES[entry.type] ?? ENTRY_TYPES.note;
   const signifierMeta = SIGNIFIERS[entry.signifier || "none"];
-  const draggable = (entry.type === "task" || entry.type === "goal" || entry.type === "event") && !entry.scheduledBlockId;
+  // Anything with a date can go on the calendar; a note is a record of
+  // something that already happened.
+  const canSchedule = isSchedulable(entry) && !entry.scheduledBlockId;
+  const draggable = canSchedule && Boolean(onStartDrag);
 
   useEffect(() => {
     if (isEditing) inputRef.current?.focus();
   }, [isEditing]);
 
-  function handleDragStart(e) {
-    e.dataTransfer.setData("text/entry-id", entry.id);
-    e.dataTransfer.effectAllowed = "move";
-    onDragStart();
-  }
 
   function startEdit() {
     setDraft({
@@ -71,9 +69,6 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDrag
 
   return (
     <li
-      draggable={draggable && !isEditing}
-      onDragStart={draggable && !isEditing ? handleDragStart : undefined}
-      onDragEnd={onDragEnd}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -169,6 +164,18 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDrag
         </div>
       ) : (
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+          {draggable && !isEditing && (
+            <span
+              className="drag-handle"
+              role="presentation"
+              aria-hidden="true"
+              title="Drag onto the schedule"
+              onPointerDown={(e) => onStartDrag(e, entry)}
+              style={{ fontFamily: fontMono, fontSize: 12, color: C.inkFaint, cursor: "grab", flexShrink: 0, lineHeight: 1.4 }}
+            >
+              ⠿
+            </span>
+          )}
           <button
             onClick={onToggle}
             aria-label={entry.done ? "Mark entry as not done" : "Mark entry as done"}
@@ -200,6 +207,17 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onDrag
             </span>
           )}
 
+          {canSchedule && onSchedule && (
+            <button
+              onClick={() => onSchedule(entry)}
+              className="entry-action"
+              aria-label={`Schedule: ${entry.text}`}
+              title="Schedule"
+              style={{ opacity: hover ? 1 : 0, transition: "opacity 0.15s", color: C.inkFaint, background: "none", border: "none", fontFamily: fontMono, fontSize: 12, cursor: "pointer", flexShrink: 0 }}
+            >
+              ⊕
+            </button>
+          )}
           <button
             onClick={startEdit}
             className="entry-action"

@@ -4,7 +4,7 @@ import { toISODate } from "../lib/dates";
 import { C, fieldInputStyle, fontBody, fontDisplay, fontMono, navBtnStyle } from "../theme";
 import { EntryRow } from "../components/EntryRow";
 
-export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry, dragEntryId, setDragEntryId }) {
+export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry, onSchedule }) {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const days = useMemo(() => {
@@ -138,9 +138,7 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
                       onToggle={() => toggleEntryDone(entry)}
                       onDelete={() => deleteEntry(entry)}
                       onSave={(patch) => updateEntry(entry, patch)}
-                      isDragging={dragEntryId === entry.id}
-                      onDragStart={() => setDragEntryId(entry.id)}
-                      onDragEnd={() => setDragEntryId(null)}
+                      onSchedule={onSchedule}
                     />
                   ))}
                 </ul>

@@ -3,7 +3,7 @@ import { ENTRY_TYPES, SIGNIFIERS } from "../lib/model";
 import { C, fieldInputStyle, fieldLabelStyle, fontBody, fontDisplay, fontMono } from "../theme";
 import { EntryRow } from "../components/EntryRow";
 
-export function Journal({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry, dragEntryId, setDragEntryId }) {
+export function Journal({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry, draggingEntryId, onStartDrag, onSchedule }) {
   const [text, setText] = useState("");
   const [type, setType] = useState("task");
   const [signifier, setSignifier] = useState("none");
@@ -177,9 +177,9 @@ export function Journal({ entries, addEntry, toggleEntryDone, deleteEntry, updat
             onToggle={() => toggleEntryDone(entry)}
             onDelete={() => deleteEntry(entry)}
             onSave={(patch) => updateEntry(entry, patch)}
-            isDragging={dragEntryId === entry.id}
-            onDragStart={() => setDragEntryId(entry.id)}
-            onDragEnd={() => setDragEntryId(null)}
+            isDragging={draggingEntryId === entry.id}
+            onStartDrag={onStartDrag}
+            onSchedule={onSchedule}
           />
         ))}
       </ul>

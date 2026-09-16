@@ -33,6 +33,8 @@ src/
     model.js           entry types, signifiers, ids, entry filing rules
     storage.js         localStorage read/write
   components/          one component per file
+  hooks/
+    useDragSession.js  pointer-based dragging shared by the journal and agenda
 ```
 
 `lib/` holds everything with no React in it, which is what the unit tests cover
@@ -55,9 +57,17 @@ The agenda window is 06:00–22:00 in 30-minute slots (`lib/constants.js`).
 - Any focusable input stays at 16px or larger; below that, iOS Safari zooms the page on focus.
 - Touch targets are at least 44pt on coarse pointers. Nothing daily may be hover-only.
 - `env(safe-area-inset-bottom)` is respected by the bottom nav; do not give it a flat height.
+- Dragging uses Pointer Events, never the HTML5 drag-and-drop API, which mobile browsers do not
+  fire. A drag handle carries `touch-action: none`; the row around it still scrolls.
+- Anything you can do by dragging must also be doable by keyboard — the schedule picker is the
+  keyboard and touch route onto the calendar.
 
 ## Status
 
-Sprint 0 of a six-sprint plan is landing: repo cleanup, module split, tests, CI, error boundary and
-the first phone fixes. Known open items — write races between rapid actions, touch dragging, and
-export/import — are tracked in the migration plan.
+Sprints 0–2 of a six-sprint plan have landed: repo cleanup, module split, tests and CI; a single
+reducer with one writer, a schema migration and undo; and pointer-based scheduling with a keyboard
+route, an inline slot composer and JSON/Markdown export with JSON import.
+
+Still open: self-hosted fonts (an offline launch falls back to Georgia), one-handed layout work
+(Sprint 3), the migration ritual and collections (Sprint 4), and recurrence, overlapping-block lanes
+and dark mode (Sprint 5).

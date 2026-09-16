@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { countByType, entryRelevantDate, summarizeCounts } from "../lib/model";
+import { JournalData } from "./JournalData";
 import { monthLabelFromKey } from "../lib/dates";
 import { C, fontBody, fontDisplay, fontMono } from "../theme";
 
-export function IndexPage({ entries, onJumpToMonth }) {
+export function IndexPage({ entries, blocks, version, onJumpToMonth, onImport }) {
   const grouped = useMemo(() => {
     // Group by month, then count from ENTRY_TYPES so a newly added type shows
     // up here by construction — goal was being counted into a bucket the
@@ -53,6 +54,8 @@ export function IndexPage({ entries, onJumpToMonth }) {
           ))}
         </ul>
       )}
+
+      <JournalData entries={entries} blocks={blocks} version={version} onImport={onImport} />
     </section>
   );
 }

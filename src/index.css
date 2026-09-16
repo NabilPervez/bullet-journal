@@ -143,3 +143,34 @@ html, body, #root {
   .app-main { padding-bottom: 0; }
   .marginalia-grid { grid-template-columns: minmax(300px, 380px) 1fr; }
 }
+
+/* ---------- Dragging ----------
+   The handle opts out of browser gestures so a drag from it is delivered to
+   the app instead of scrolling the list; the rest of the row still pans. */
+
+.drag-handle,
+.agenda-block {
+  touch-action: none;
+}
+
+.drag-handle {
+  min-width: 20px;
+  text-align: center;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .drag-handle {
+    min-width: 28px;
+    min-height: 28px;
+  }
+}
+
+body.is-dragging {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grabbing;
+}
+
+body.is-dragging .agenda-block {
+  cursor: grabbing;
+}

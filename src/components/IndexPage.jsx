@@ -1,13 +1,12 @@
 import { useMemo } from "react";
-import { countByType, entryRelevantDate, summarizeCounts } from "../lib/model";
-import { JournalData } from "./JournalData";
+import { countByType, entryRelevantDate, ENTRY_TYPES, summarizeCounts } from "../lib/model";
 import { monthLabelFromKey } from "../lib/dates";
-import { C, fontBody, fontDisplay, fontMono } from "../theme";
+import { JournalData } from "./JournalData";
 
 export function IndexPage({ entries, blocks, version, onJumpToMonth, onImport }) {
   const grouped = useMemo(() => {
     // Group by month, then count from ENTRY_TYPES so a newly added type shows
-    // up here by construction — goal was being counted into a bucket the
+    // up here by construction — goal used to be counted into a bucket the
     // summary line never printed.
     const byMonth = new Map();
     entries.forEach((e) => {
@@ -16,39 +15,39 @@ export function IndexPage({ entries, blocks, version, onJumpToMonth, onImport })
       byMonth.get(key).push(e);
     });
     return Array.from(byMonth.entries())
-      .map(([key, group]) => ({ key, total: group.length, summary: summarizeCounts(countByType(group)) }))
-      .sort((a, b) => a.key.localeCompare(b.key));
+      .map(([key, group]) => ({ key, group, counts: countByType(group), summary: summarizeCounts(countByType(group)) }))
+      .sort((a, b) => b.key.localeCompare(a.key));
   }, [entries]);
 
   return (
-    <section aria-label="Index" style={{ maxWidth: 640 }}>
-      <h2 style={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: 17, margin: "0 0 4px" }}>Index</h2>
-      <p style={{ fontFamily: fontMono, fontSize: 11, color: C.inkFaint, margin: "0 0 20px" }}>
-        Every month you've logged something, with a way back in.
-      </p>
+    <section aria-label="Index" className="stack gap-5" style={{ maxWidth: 680 }}>
+      <div className="stack gap-1">
+        <h2 className="title">Index</h2>
+        <p className="meta">Every month you've logged something, with a way back in.</p>
+      </div>
 
       {grouped.length === 0 ? (
-        <p style={{ fontFamily: fontBody, fontSize: 13, color: C.inkFaint, fontStyle: "italic", padding: "24px 0", textAlign: "center", border: `1px dashed ${C.rule}`, borderRadius: 8 }}>
-          Nothing logged yet. Start in the Daily Log.
-        </p>
+        <p className="empty">Nothing logged yet. Start in Today.</p>
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        <ul className="stack gap-2" style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {grouped.map((g) => (
-            <li
-              key={g.key}
-              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 14px", border: `1px solid ${C.rule}`, borderRadius: 8, background: "rgba(255,255,255,0.4)" }}
-            >
-              <div>
-                <p style={{ fontFamily: fontBody, fontSize: 15, margin: 0, color: C.ink }}>{monthLabelFromKey(g.key)}</p>
-                <p style={{ fontFamily: fontMono, fontSize: 12, color: C.inkFaint, margin: "2px 0 0" }}>
-                  {g.summary}
-                </p>
-              </div>
-              <button
-                onClick={() => onJumpToMonth(g.key)}
-                style={{ fontFamily: fontMono, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", minHeight: 44, padding: "0 16px", borderRadius: 6, border: "none", background: C.accent, color: C.paper, cursor: "pointer", flexShrink: 0 }}
-              >
-                View →
+            <li key={g.key}>
+              <button className="index-row" onClick={() => onJumpToMonth(g.key)}>
+                <span className="stack gap-1" style={{ minWidth: 0 }}>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--fs-title)" }}>
+                    {monthLabelFromKey(g.key)}
+                  </span>
+                  <span className="meta">{g.summary}</span>
+                </span>
+                <span className="row gap-1" aria-hidden="true">
+                  {Object.keys(ENTRY_TYPES)
+                    .filter((t) => g.counts[t])
+                    .map((t) => (
+                      <span key={t} className="sticker sticker-sm sticker-static" data-type={t}>
+                        {ENTRY_TYPES[t].glyph}
+                      </span>
+                    ))}
+                </span>
               </button>
             </li>
           ))}

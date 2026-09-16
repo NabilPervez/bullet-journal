@@ -25,8 +25,8 @@ npm run dev
 ```
 src/
   App.jsx              state, persistence and view routing
-  index.css            shell layout, responsive tiers, safe-area insets
-  theme.js             colour tokens, type stacks, shared control styles
+  index.css            the design system: tokens, components, responsive tiers
+  theme.js             the same tokens addressed from JS
   lib/
     constants.js       agenda grid window and slot geometry
     dates.js           local-date arithmetic and formatting
@@ -35,6 +35,7 @@ src/
   components/          one component per file
   hooks/
     useDragSession.js  pointer-based dragging shared by the journal and agenda
+    useTheme.js        night / day, remembered per device
     useSwipeActions.js swipe-to-complete and swipe-to-delete on an entry row
     useViewport.js     compact / medium / expanded tier
 ```
@@ -53,6 +54,20 @@ duration. Scheduling an entry creates a block and records its id on the entry.
 
 The agenda window is 06:00–22:00 in 30-minute slots (`lib/constants.js`).
 
+## Design system
+
+Night is the default theme; the header toggle switches to Day and remembers it. Everything is
+tokenised in `index.css` — colour, spacing (`--s1`…`--s6`), radii, type scale — and components are
+styled with classes (`.btn`, `.icon-btn`, `.chip`, `.sticker`, `.ticket`, `.card`, `.sheet`) rather
+than inline style objects.
+
+Each entry type owns a colour, and that colour is the same everywhere it appears: the sticker on a
+row, the chip in the composer, the block on the agenda. Goal is blaze, task is volt, event is
+cobalt, note is amber. Colour carries meaning here, so don't spend these on decoration.
+
+`--accent` is a fill that takes black text. For accent-coloured *text*, use `--accent-ink`, which is
+darkened in the Day theme where the fill colour would be unreadable as type.
+
 ## Conventions
 
 - Dates are handled as local `YYYY-MM-DD` strings. Never round-trip a journal date through UTC.
@@ -67,10 +82,12 @@ The agenda window is 06:00–22:00 in 30-minute slots (`lib/constants.js`).
   fixed pixel widths on inputs — the layout has to hold at 320pt.
 - Font sizes come from `--fs-body` / `--fs-meta` / `--fs-label`, sized for the phone first and
   stepped down on wide screens. Don't hardcode a size for text people read daily.
+- 46px is the minimum for anything a finger meets (44 for the small variants on touch). An icon is
+  a circle with a surface, never a bare glyph.
 
 ## Status
 
-Sprints 0–3 of a six-sprint plan have landed: repo cleanup, module split, tests and CI; a single
+Sprints 0–3 of the plan have landed, plus a full UI overhaul: repo cleanup, module split, tests and CI; a single
 reducer with one writer, a schema migration and undo; pointer-based scheduling with a keyboard
 route, an inline slot composer and JSON/Markdown export with JSON import; and a one-handed phone
 layout — thumb-arc capture sheet, swipe actions, Log/Schedule tabs, 44pt agenda rows and a day

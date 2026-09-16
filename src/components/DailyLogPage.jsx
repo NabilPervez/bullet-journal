@@ -6,7 +6,6 @@ import { Journal } from "./Journal";
 import { DayAgenda } from "./DayAgenda";
 import { DragGhost } from "./DragGhost";
 import { SchedulePicker } from "./SchedulePicker";
-import { C, fontMono } from "../theme";
 
 export function DailyLogPage({
   entries,
@@ -79,8 +78,8 @@ export function DailyLogPage({
       {/* Side by side there is room for both. On a phone, stacking them put
           the schedule below every entry in the journal. */}
       {compact ? (
-        <div>
-          <div role="tablist" aria-label="Daily log" style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+        <div className="stack gap-5">
+          <div className="seg" role="tablist" aria-label="Daily log">
             {[
               ["log", "Log"],
               ["schedule", "Schedule"],
@@ -88,21 +87,9 @@ export function DailyLogPage({
               <button
                 key={id}
                 role="tab"
+                className="seg-item"
                 aria-selected={pane === id}
                 onClick={() => setPane(id)}
-                style={{
-                  flex: 1,
-                  minHeight: 44,
-                  fontFamily: fontMono,
-                  fontSize: 13,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  borderRadius: 8,
-                  border: `1px solid ${pane === id ? C.ink : C.rule}`,
-                  background: pane === id ? C.ink : "transparent",
-                  color: pane === id ? C.paper : C.inkSoft,
-                  cursor: "pointer",
-                }}
               >
                 {label}
               </button>
@@ -111,7 +98,7 @@ export function DailyLogPage({
           {pane === "log" ? journal : agenda}
         </div>
       ) : (
-        <div className="marginalia-grid">
+        <div className="grid-daily">
           {journal}
           {agenda}
         </div>

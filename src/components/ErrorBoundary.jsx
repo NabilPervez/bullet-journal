@@ -1,8 +1,7 @@
 import { Component } from "react";
-import { C, fontBody, fontDisplay, fontMono } from "../theme";
 
-// A render error used to blank the page with no way back. The journal itself
-// is still in localStorage, so the recovery path is: reload, or export first.
+// A render error used to blank the page. The journal is still in storage, so
+// the way out is: reload, or take a copy first.
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -23,10 +22,10 @@ export class ErrorBoundary extends Component {
       blocks: localStorage.getItem("marginalia:blocks"),
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `marginalia-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `marginalia-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
     URL.revokeObjectURL(url);
   };
 
@@ -36,46 +35,19 @@ export class ErrorBoundary extends Component {
     return (
       <div
         role="alert"
-        style={{
-          minHeight: "100vh",
-          background: C.paper,
-          color: C.ink,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 14,
-          padding: 24,
-          textAlign: "center",
-        }}
+        className="stack gap-4"
+        style={{ minHeight: "100svh", alignItems: "center", justifyContent: "center", padding: "var(--s5)", textAlign: "center" }}
       >
-        <h1 style={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: 20, margin: 0 }}>The page stopped drawing</h1>
-        <p style={{ fontFamily: fontBody, fontSize: 15, color: C.inkSoft, margin: 0, maxWidth: "40ch" }}>
+        <span className="sticker sticker-static" data-type="goal" aria-hidden="true">!</span>
+        <h1 className="title-lg">The page stopped drawing</h1>
+        <p className="muted" style={{ maxWidth: "40ch", margin: 0 }}>
           Your entries are still saved on this device. Reload to carry on, or download a copy first.
         </p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              fontFamily: fontMono, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em",
-              padding: "12px 20px", minHeight: 44, borderRadius: 8, border: "none",
-              background: C.accent, color: C.paper, cursor: "pointer",
-            }}
-          >
-            Reload
-          </button>
-          <button
-            onClick={this.handleExport}
-            style={{
-              fontFamily: fontMono, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em",
-              padding: "12px 20px", minHeight: 44, borderRadius: 8, border: `1px solid ${C.rule}`,
-              background: "transparent", color: C.inkSoft, cursor: "pointer",
-            }}
-          >
-            Download a copy
-          </button>
+        <div className="row gap-2 wrap" style={{ justifyContent: "center" }}>
+          <button className="btn btn-primary" onClick={() => window.location.reload()}>Reload</button>
+          <button className="btn btn-ghost" onClick={this.handleExport}>Download a copy</button>
         </div>
-        <pre style={{ fontFamily: fontMono, fontSize: 11, color: C.inkFaint, maxWidth: "90vw", overflowX: "auto", margin: 0 }}>
+        <pre className="meta" style={{ maxWidth: "90vw", overflowX: "auto" }}>
           {String(this.state.error?.message || this.state.error)}
         </pre>
       </div>

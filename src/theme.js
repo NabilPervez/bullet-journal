@@ -1,50 +1,32 @@
+// Design tokens live in index.css. These are the same tokens addressed from
+// JS, so a component that still sets an inline style stays on the system and
+// follows the theme.
+
 export const C = {
-  paper: "#FAFAF7",
-  paperDim: "#F1F0EB",
-  ink: "#1B1B18",
-  inkSoft: "#4A4944",
-  inkFaint: "#8C8A82",
-  rule: "#DAD8CF",
-  accent: "#26365C",
-  critical: "#9C3B2E",
+  paper: "var(--bg)",
+  surface: "var(--surface)",
+  paperDim: "var(--surface-2)",
+  raised: "var(--surface-3)",
+  ink: "var(--text)",
+  inkSoft: "var(--text-muted)",
+  inkFaint: "var(--text-dim)",
+  rule: "var(--line)",
+  ruleStrong: "var(--line-strong)",
+  accent: "var(--accent)",
+  onAccent: "var(--on-accent)",
+  critical: "var(--danger)",
 };
 
-export const fontDisplay = "'Space Grotesk', sans-serif";
-export const fontBody = "'Source Serif 4', Georgia, serif";
-export const fontMono = "'IBM Plex Mono', monospace";
-
-export const navBtnStyle = {
-  fontFamily: fontMono,
-  fontSize: 13,
-  width: 26,
-  height: 26,
-  borderRadius: 6,
-  border: `1px solid ${C.rule}`,
-  background: C.paperDim,
-  color: C.inkSoft,
-  cursor: "pointer",
+export const TYPE_COLOR = {
+  goal: "var(--type-goal)",
+  task: "var(--type-task)",
+  event: "var(--type-event)",
+  note: "var(--type-note)",
 };
 
-export const fieldLabelStyle = {
-  display: "block",
-  fontFamily: fontMono,
-  fontSize: "var(--fs-label)",
-  textTransform: "uppercase",
-  letterSpacing: "0.08em",
-  color: C.inkFaint,
-  marginBottom: 3,
-};
+export const fontDisplay = "var(--font-display)";
+export const fontBody = "var(--font-ui)";
+export const fontMono = "var(--font-mono)";
 
-export const fieldInputStyle = {
-  width: "100%",
-  background: "rgba(255,255,255,0.6)",
-  border: `1px solid ${C.rule}`,
-  borderRadius: 6,
-  padding: "6px 8px",
-  fontFamily: fontBody,
-  // 16px floor: iOS Safari zooms the page on any focused field below this.
-  fontSize: 16,
-  color: C.ink,
-  outline: "none",
-  boxSizing: "border-box",
-};
+export const THEMES = ["night", "day"];
+export const THEME_KEY = "marginalia:theme";

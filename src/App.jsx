@@ -5,7 +5,6 @@ import { initialState, journalReducer } from "./lib/journalReducer";
 import { uid } from "./lib/model";
 import { SLOT_MINUTES } from "./lib/constants";
 import { monthOffsetFromKey } from "./lib/dates";
-import { C, fontBody, fontMono } from "./theme";
 import { Nav } from "./components/Nav";
 import { Header } from "./components/Header";
 import { UndoToast } from "./components/UndoToast";
@@ -16,6 +15,7 @@ import { MonthlyLogPage } from "./components/MonthlyLogPage";
 import { WeeklyLogPage } from "./components/WeeklyLogPage";
 import { DailyLogPage } from "./components/DailyLogPage";
 import { useIsCompact } from "./hooks/useViewport";
+import { useTheme } from "./hooks/useTheme";
 
 const VIEWS = ["index", "future", "monthly", "weekly", "daily"];
 const SAVE_DEBOUNCE_MS = 200;
@@ -31,6 +31,7 @@ export default function App() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [capturing, setCapturing] = useState(false);
   const compact = useIsCompact();
+  const { theme, toggle: toggleTheme } = useTheme();
 
   // Load once, run any pending schema migration, then hand the result to the
   // reducer. Nothing else reads or writes storage.
@@ -137,16 +138,16 @@ export default function App() {
 
   if (status === "loading") {
     return (
-      <div style={{ minHeight: "100vh", background: C.paper, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fontMono, color: C.inkFaint, fontSize: 12 }}>
-        Loading journal…
+      <div className="row" style={{ minHeight: "100svh", justifyContent: "center" }}>
+        <p className="eyebrow">Opening the journal…</p>
       </div>
     );
   }
 
-  const pageTitles = { index: "Index", future: "Future Log", monthly: "Monthly Log", weekly: "Weekly Log", daily: "Daily Log" };
+  const pageTitles = { index: "Index", future: "Future", monthly: "Month", weekly: "Week", daily: "Today" };
 
   return (
-    <div className="app-shell" style={{ background: C.paper, color: C.ink, fontFamily: fontBody }}>
+    <div className="app-shell">
       <Nav view={view} onChangeView={setView} />
       <div className="app-main">
         <Header
@@ -154,8 +155,10 @@ export default function App() {
           saveError={saveError}
           readonly={status === "readonly"}
           onRetrySave={retrySave}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
-        <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px 32px" }}>
+        <main className="page">
           {view === "index" && (
             <IndexPage
               entries={entries}

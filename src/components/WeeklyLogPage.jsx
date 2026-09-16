@@ -1,31 +1,36 @@
 import { useMemo, useState } from "react";
 import { toISODate } from "../lib/dates";
 import { ENTRY_TYPES } from "../lib/model";
+import { bySoonest } from "../lib/ordering";
 import { EntryRow } from "./EntryRow";
+
+const DAYS_SHOWN = 7;
 
 export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry, onSchedule }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [openDay, setOpenDay] = useState(null);
   const [dayDraft, setDayDraft] = useState({ text: "", type: "task", time: "" });
 
+  // Today, then the six days after it — not a calendar week. What matters is
+  // what's coming, and the first row should be the day you're standing in.
   const days = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    today.setDate(today.getDate() + weekOffset * 7);
-    // Note: a rolling five-day window centred on today. A true Mon–Sun week
-    // is the next ticket; this is layout work only.
-    return [-2, -1, 0, 1, 2].map((offset) => {
-      const d = new Date(today);
-      d.setDate(d.getDate() + offset);
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() + weekOffset * DAYS_SHOWN);
+    return Array.from({ length: DAYS_SHOWN }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
       return d;
     });
   }, [weekOffset]);
 
   function dayItems(date) {
     const iso = toISODate(date);
-    return [...entries]
-      .filter((e) => (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso))
-      .sort((a, b) => (a.type === "goal" ? 0 : 1) - (b.type === "goal" ? 0 : 1));
+    return entries
+      .filter(
+        (e) => (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso)
+      )
+      .sort(bySoonest);
   }
 
   async function submitDay(date) {
@@ -40,40 +45,51 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
     setOpenDay(null);
   }
 
-  const span = `${days[0].toLocaleDateString(undefined, { day: "numeric", month: "short" })} – ${days[4].toLocaleDateString(undefined, { day: "numeric", month: "short" })}`;
+  const span = `${days[0].toLocaleDateString(undefined, { day: "numeric", month: "short" })} – ${days[DAYS_SHOWN - 1].toLocaleDateString(undefined, { day: "numeric", month: "short" })}`;
+  const todayISO = toISODate(new Date());
 
   return (
-    <section aria-label="Weekly Log" className="stack gap-5">
+    <section aria-label="Weekly Log" className="stack gap-5" style={{ maxWidth: 760 }}>
       <div className="row spread wrap gap-3">
         <div className="stack">
-          <h2 className="title">Five days</h2>
+          <h2 className="title">Next seven days</h2>
           <p className="meta">{span}</p>
         </div>
         <div className="row gap-2">
-          <button className="icon-btn" onClick={() => setWeekOffset((n) => n - 1)} aria-label="Previous week">‹</button>
+          <button className="icon-btn" onClick={() => setWeekOffset((n) => n - 1)} aria-label="Previous seven days">‹</button>
           <button className="btn btn-ghost" onClick={() => setWeekOffset(0)} disabled={weekOffset === 0}>Now</button>
-          <button className="icon-btn" onClick={() => setWeekOffset((n) => n + 1)} aria-label="Next week">›</button>
+          <button className="icon-btn" onClick={() => setWeekOffset((n) => n + 1)} aria-label="Next seven days">›</button>
         </div>
       </div>
 
-      <div className="week-pager stagger">
-        {days.map((date) => {
+      {/* One day per row, stacked. Seven side-by-side columns meant cramped
+          tracks on a phone and a swipe to reach the end of the week. */}
+      <div className="stack gap-3 stagger">
+        {days.map((date, index) => {
           const iso = toISODate(date);
-          const isToday = iso === toISODate(new Date());
+          const isToday = iso === todayISO;
           const isOpen = openDay === iso;
           const items = dayItems(date);
 
           return (
-            <div key={iso} className="week-day" data-today={isToday ? "true" : "false"}>
-              <div className="week-day-head">
-                <div className="stack">
-                  <span className="eyebrow" style={{ color: isToday ? "var(--accent-ink)" : undefined }}>
-                    {date.toLocaleDateString(undefined, { weekday: "long" })}
-                  </span>
-                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--fs-title)" }}>
-                    {date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
-                  </span>
+            <div key={iso} className="day-row" data-today={isToday ? "true" : "false"}>
+              <div className="day-row-head">
+                <div className="row gap-3" style={{ minWidth: 0 }}>
+                  <div className="day-stamp">
+                    <span className="day-stamp-num">{date.getDate()}</span>
+                    <span className="day-stamp-wd">{date.toLocaleDateString(undefined, { weekday: "short" })}</span>
+                  </div>
+                  <div className="stack" style={{ minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--fs-title)" }}>
+                      {isToday ? "Today" : index === 1 && weekOffset === 0 ? "Tomorrow" : date.toLocaleDateString(undefined, { weekday: "long" })}
+                    </span>
+                    <span className="meta">
+                      {date.toLocaleDateString(undefined, { day: "numeric", month: "long" })}
+                      {items.length > 0 ? ` · ${items.length}` : ""}
+                    </span>
+                  </div>
                 </div>
+
                 <button
                   className="icon-btn icon-btn-sm"
                   onClick={() => setOpenDay(isOpen ? null : iso)}
@@ -84,7 +100,7 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
                 </button>
               </div>
 
-              <div className="grow stack gap-2" style={{ padding: "var(--s3)" }}>
+              <div className="stack gap-2" style={{ padding: "var(--s3)" }}>
                 {isOpen && (
                   <div className="card stack gap-3">
                     <div className="row gap-2 wrap">
@@ -124,19 +140,22 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
                   </div>
                 )}
 
-                <ul className="stack gap-2" style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                  {items.length === 0 && !isOpen && <li className="meta" style={{ textAlign: "center", padding: "var(--s5) 0" }}>Empty</li>}
-                  {items.map((entry) => (
-                    <EntryRow
-                      key={entry.id}
-                      entry={entry}
-                      onToggle={() => toggleEntryDone(entry)}
-                      onDelete={() => deleteEntry(entry)}
-                      onSave={(patch) => updateEntry(entry, patch)}
-                      onSchedule={onSchedule}
-                    />
-                  ))}
-                </ul>
+                {items.length === 0 && !isOpen ? (
+                  <p className="meta" style={{ padding: "var(--s1) 0" }}>Nothing yet</p>
+                ) : (
+                  <ul className="stack gap-2" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    {items.map((entry) => (
+                      <EntryRow
+                        key={entry.id}
+                        entry={entry}
+                        onToggle={() => toggleEntryDone(entry)}
+                        onDelete={() => deleteEntry(entry)}
+                        onSave={(patch) => updateEntry(entry, patch)}
+                        onSchedule={onSchedule}
+                      />
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           );

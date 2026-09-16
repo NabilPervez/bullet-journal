@@ -4,7 +4,7 @@ import { SWIPE_THRESHOLD_PX } from "../lib/gestures";
 import { ENTRY_TYPES, SIGNIFIERS, isSchedulable } from "../lib/model";
 import { formatDateShort, formatTimeShort } from "../lib/dates";
 
-export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStartDrag, onSchedule }) {
+export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStartDrag, onSchedule, showType = true }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(() => toDraft(entry));
   const inputRef = useRef(null);
@@ -193,14 +193,18 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
           </div>
 
           <div className="row gap-2 wrap">
-            <span
-              className="sticker sticker-sm sticker-static"
-              data-type={entry.type}
-              title={meta.label}
-              aria-label={meta.label}
-            >
-              {meta.glyph}
-            </span>
+            {/* Inside a bundle the group heading already says the kind, so
+                the row doesn't repeat it. */}
+            {showType && (
+              <span
+                className="sticker sticker-sm sticker-static"
+                data-type={entry.type}
+                title={meta.label}
+                aria-label={meta.label}
+              >
+                {meta.glyph}
+              </span>
+            )}
             {tickets.map((t) => (
               <span key={t} className="ticket">{t}</span>
             ))}

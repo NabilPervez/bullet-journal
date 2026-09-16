@@ -10,6 +10,12 @@
   /* Bottom inset on notched phones; 0 everywhere else. */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-height: 64px;
+
+  /* Type scale, sized for the compact tier first: this is read at arm's
+     length on a phone, where 14px body and 10px meta were decorative. */
+  --fs-body: 16px;
+  --fs-meta: 13px;
+  --fs-label: 11px;
 }
 
 * {
@@ -120,6 +126,13 @@ html, body, #root {
 /* ---------- Expanded: side rail ---------- */
 
 @media (min-width: 900px) {
+  /* Closer reading distance, denser page. */
+  :root {
+    --fs-body: 14.5px;
+    --fs-meta: 11px;
+    --fs-label: 10px;
+  }
+
   .app-shell { flex-direction: row; }
   .marginalia-nav {
     position: sticky;
@@ -173,4 +186,25 @@ body.is-dragging {
 
 body.is-dragging .agenda-block {
   cursor: grabbing;
+}
+
+/* Day pager: a horizontal scroller with snap points, so a phone compares
+   days by swiping instead of scrolling past five stacked cards. */
+.week-pager {
+  scrollbar-width: none;
+}
+.week-pager::-webkit-scrollbar {
+  display: none;
+}
+
+/* Undo sits above the nav — and above the capture button on a phone, which
+   otherwise lands on top of its Undo target. */
+.undo-toast {
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
+}
+
+@media (max-width: 599px) {
+  .undo-toast {
+    bottom: calc(var(--nav-height) + var(--safe-bottom) + 84px);
+  }
 }

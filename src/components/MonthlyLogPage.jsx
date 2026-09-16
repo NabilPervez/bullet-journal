@@ -66,7 +66,7 @@ export function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 12px" }}>
                   <div style={{ width: 40, flexShrink: 0, textAlign: "right" }}>
                     <div style={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: 14, color: isToday ? C.accent : C.ink }}>{day}</div>
-                    <div style={{ fontFamily: fontMono, fontSize: 9, color: C.inkFaint, textTransform: "uppercase" }}>{weekday}</div>
+                    <div style={{ fontFamily: fontMono, fontSize: "var(--fs-label)", color: C.inkFaint, textTransform: "uppercase" }}>{weekday}</div>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {items.length === 0 ? (
@@ -74,7 +74,7 @@ export function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry
                     ) : (
                       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                         {items.map((e) => (
-                          <li key={e.id} style={{ fontFamily: fontBody, fontSize: 13, color: C.ink, display: "flex", gap: 5 }}>
+                          <li key={e.id} style={{ fontFamily: fontBody, fontSize: "var(--fs-body)", color: C.ink, display: "flex", gap: 5 }}>
                             <span style={{ color: C.inkFaint }}>{ENTRY_TYPES[e.type].glyph}</span>
                             <span>{e.text}</span>
                             {e.type === "event" && e.eventTime && (
@@ -122,14 +122,14 @@ export function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry
                       onChange={(e) => setDayDraft((d) => ({ ...d, text: e.target.value }))}
                       onKeyDown={(e) => e.key === "Enter" && submitDay(day)}
                       placeholder="What's happening?"
-                      style={{ ...fieldInputStyle, width: 160 }}
+                      style={{ ...fieldInputStyle, flex: "1 1 140px", minWidth: 0 }}
                     />
                     {dayDraft.type === "event" && (
                       <input
                         type="time"
                         value={dayDraft.time}
                         onChange={(e) => setDayDraft((d) => ({ ...d, time: e.target.value }))}
-                        style={{ ...fieldInputStyle, width: 110 }}
+                        style={{ ...fieldInputStyle, flex: "0 1 130px", minWidth: 0 }}
                       />
                     )}
                     <button

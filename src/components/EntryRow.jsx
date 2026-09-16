@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useSwipeActions } from "../hooks/useSwipeActions";
+import { SWIPE_THRESHOLD_PX } from "../lib/gestures";
 import { ENTRY_TYPES, SIGNIFIERS, isSchedulable } from "../lib/model";
 import { formatDateShort, formatTimeShort } from "../lib/dates";
 import { C, fieldInputStyle, fieldLabelStyle, fontBody, fontDisplay, fontMono } from "../theme";
@@ -25,6 +27,13 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
   useEffect(() => {
     if (isEditing) inputRef.current?.focus();
   }, [isEditing]);
+
+  const { offset, handlers: swipeHandlers } = useSwipeActions({
+    onComplete: onToggle,
+    onDelete: onDelete,
+    enabled: !isEditing,
+  });
+  const revealed = Math.abs(offset) >= SWIPE_THRESHOLD_PX;
 
 
   function startEdit() {
@@ -69,16 +78,45 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
 
   return (
     <li
+      className="entry-row"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      style={{
-        padding: "6px 8px",
-        borderRadius: 6,
-        border: `1px solid ${hover || isEditing ? C.rule : "transparent"}`,
-        background: hover || isEditing ? "rgba(255,255,255,0.5)" : "transparent",
-        opacity: isDragging ? 0.4 : 1,
-      }}
+      style={{ position: "relative", borderRadius: 6, overflow: "hidden", opacity: isDragging ? 0.4 : 1 }}
     >
+      {offset !== 0 && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: offset > 0 ? "flex-start" : "flex-end",
+            padding: "0 14px",
+            borderRadius: 6,
+            background: offset > 0 ? C.accent : C.critical,
+            color: C.paper,
+            fontFamily: fontMono,
+            fontSize: 12,
+            opacity: revealed ? 1 : 0.55,
+          }}
+        >
+          {offset > 0 ? (entry.done ? "Reopen" : "Done") : "Delete"}
+        </div>
+      )}
+      <div
+        {...swipeHandlers}
+        style={{
+          position: "relative",
+          padding: "6px 8px",
+          borderRadius: 6,
+          border: `1px solid ${hover || isEditing ? C.rule : "transparent"}`,
+          background: hover || isEditing || offset !== 0 ? "rgba(255,255,255,0.86)" : C.paper,
+          transform: `translateX(${offset}px)`,
+          transition: offset === 0 ? "transform 0.18s ease-out" : "none",
+          touchAction: "pan-y",
+        }}
+      >
       {isEditing ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -192,12 +230,12 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
                   {signifierMeta.char}
                 </span>
               )}
-              <span style={{ fontFamily: fontBody, fontSize: 14, color: entry.done ? C.inkFaint : C.ink, textDecoration: entry.done ? "line-through" : "none" }}>
+              <span style={{ fontFamily: fontBody, fontSize: "var(--fs-body)", color: entry.done ? C.inkFaint : C.ink, textDecoration: entry.done ? "line-through" : "none", transition: "color 0.15s ease-out" }}>
                 {entry.text}
               </span>
             </div>
             {metaLine.length > 0 && (
-              <p style={{ margin: "1px 0 0", fontFamily: fontMono, fontSize: 10, color: C.inkFaint }}>{metaLine.join(" · ")}</p>
+              <p style={{ margin: "1px 0 0", fontFamily: fontMono, fontSize: "var(--fs-meta)", color: C.inkFaint }}>{metaLine.join(" · ")}</p>
             )}
           </div>
 
@@ -234,8 +272,9 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
           >
             ✕
           </button>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </li>
   );
 }

@@ -93,7 +93,11 @@ export function useDragSession(onDrop) {
       active: false,
       slot: null,
     };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    try {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    } catch {
+      // Capture is an optimisation; the window listeners drive the drag.
+    }
   }, []);
 
   return { drag, startDrag };

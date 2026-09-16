@@ -28,7 +28,7 @@ export const navBtnStyle = {
 export const fieldLabelStyle = {
   display: "block",
   fontFamily: fontMono,
-  fontSize: 9,
+  fontSize: "var(--fs-label)",
   textTransform: "uppercase",
   letterSpacing: "0.08em",
   color: C.inkFaint,

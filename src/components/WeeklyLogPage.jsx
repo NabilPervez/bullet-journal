@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useIsCompact } from "../hooks/useViewport";
 import { ENTRY_TYPES } from "../lib/model";
 import { toISODate } from "../lib/dates";
 import { C, fieldInputStyle, fontBody, fontDisplay, fontMono, navBtnStyle } from "../theme";
@@ -6,6 +7,7 @@ import { EntryRow } from "../components/EntryRow";
 
 export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry, onSchedule }) {
   const [weekOffset, setWeekOffset] = useState(0);
+  const compact = useIsCompact();
 
   const days = useMemo(() => {
     const today = new Date();
@@ -57,7 +59,14 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+      <div
+        className={compact ? "week-pager" : undefined}
+        style={
+          compact
+            ? { display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -16px", padding: "0 16px 8px" }
+            : { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }
+        }
+      >
         {days.map((date) => {
           const iso = toISODate(date);
           const isToday = iso === toISODate(new Date());
@@ -65,7 +74,18 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
           const items = dayItems(date);
           
           return (
-            <div key={iso} style={{ border: `1px solid ${isToday ? C.accent : C.rule}`, borderRadius: 8, background: isToday ? "rgba(38,54,92,0.02)" : "rgba(255,255,255,0.4)", display: "flex", flexDirection: "column", minHeight: 300 }}>
+            <div
+              key={iso}
+              style={{
+                border: `1px solid ${isToday ? C.accent : C.rule}`,
+                borderRadius: 8,
+                background: isToday ? "rgba(38,54,92,0.02)" : "rgba(255,255,255,0.4)",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: compact ? 240 : 300,
+                ...(compact ? { flex: "0 0 82%", scrollSnapAlign: "start" } : null),
+              }}
+            >
               <div style={{ padding: "12px", borderBottom: `1px solid ${C.rule}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontFamily: fontMono, fontSize: 10, textTransform: "uppercase", color: isToday ? C.accent : C.inkFaint }}>

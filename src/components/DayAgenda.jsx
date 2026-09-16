@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { ROW_HEIGHT, RESIZE_SNAP_MINUTES, SLOTS_PER_DAY, SLOT_MINUTES } from "../lib/constants";
+import { ROW_HEIGHT, ROW_HEIGHT_COMPACT, RESIZE_SNAP_MINUTES, SLOTS_PER_DAY, SLOT_MINUTES } from "../lib/constants";
+import { visibleSlotRange } from "../lib/agenda";
 import { minutesToLabel, startMinuteToHHMM, toISODate } from "../lib/dates";
 import { ENTRY_TYPES } from "../lib/model";
 import { C, fieldInputStyle, fontDisplay, fontMono, navBtnStyle } from "../theme";
@@ -15,9 +16,14 @@ export function DayAgenda({
   startDrag,
   dayOffset,
   setDayOffset,
+  compact = false,
 }) {
   const entryById = useMemo(() => Object.fromEntries(entries.map((e) => [e.id, e])), [entries]);
   const [composerSlot, setComposerSlot] = useState(null);
+  const [showWholeDay, setShowWholeDay] = useState(false);
+
+  // A 26px row is shorter than a fingertip; on a phone the rows are 44.
+  const rowHeight = compact ? ROW_HEIGHT_COMPACT : ROW_HEIGHT;
   const resizingRef = useRef(null);
   const [liveResize, setLiveResize] = useState(null);
 
@@ -31,8 +37,11 @@ export function DayAgenda({
   const isToday = dayOffset === 0;
   const dayLabel = date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
-  const slotIndices = Array.from({ length: SLOTS_PER_DAY }, (_, i) => i);
   const dayBlocks = blocks.filter((b) => b.date === dateStr);
+  // Render the part of the day that has something in it. The rest is one tap
+  // away rather than a screen and a half of empty rows above it.
+  const range = visibleSlotRange(dayBlocks, { expanded: showWholeDay || !compact });
+  const slotIndices = Array.from({ length: range.last - range.first + 1 }, (_, i) => range.first + i);
   const hoverSlot = drag?.slot?.date === dateStr ? drag.slot.index : null;
 
   // ---- Resize: pointer events, so it works under a finger, and snapped to
@@ -43,7 +52,7 @@ export function DayAgenda({
       const ctx = resizingRef.current;
       if (!ctx || event.pointerId !== ctx.pointerId) return;
       if (event.cancelable) event.preventDefault();
-      const pxPerStep = ROW_HEIGHT * (RESIZE_SNAP_MINUTES / SLOT_MINUTES);
+      const pxPerStep = ctx.rowHeight * (RESIZE_SNAP_MINUTES / SLOT_MINUTES);
       const steps = Math.round((event.clientY - ctx.startY) / pxPerStep);
       const next = Math.max(RESIZE_SNAP_MINUTES, ctx.startDuration + steps * RESIZE_SNAP_MINUTES);
       ctx.liveDuration = next;
@@ -73,6 +82,7 @@ export function DayAgenda({
     event.preventDefault();
     resizingRef.current = {
       pointerId: event.pointerId,
+      rowHeight,
       block,
       startY: event.clientY,
       startDuration: block.durationMinutes,
@@ -130,6 +140,12 @@ export function DayAgenda({
         </div>
       </div>
 
+      {range.hiddenBefore > 0 && (
+        <button onClick={() => setShowWholeDay(true)} style={expanderStyle}>
+          ↑ {minutesToLabel(0)} – {minutesToLabel((range.first - 1) * SLOT_MINUTES)}
+        </button>
+      )}
+
       <div style={{ border: `1px solid ${C.rule}`, borderRadius: 8, background: "rgba(255,255,255,0.4)", position: "relative", maxWidth: 480 }}>
         <div style={{ display: "grid", gridTemplateColumns: "56px 1fr" }}>
           {slotIndices.map((slotIndex) => (
@@ -143,7 +159,7 @@ export function DayAgenda({
                   color: C.inkFaint,
                   textAlign: "right",
                   paddingRight: 6,
-                  height: ROW_HEIGHT,
+                  height: rowHeight,
                   display: "flex",
                   alignItems: "flex-start",
                   justifyContent: "flex-end",
@@ -160,7 +176,7 @@ export function DayAgenda({
                 onClick={() => setComposerSlot(slotIndex)}
                 style={{
                   borderBottom: `1px solid ${C.rule}`,
-                  height: ROW_HEIGHT,
+                  height: rowHeight,
                   cursor: "pointer",
                   background: hoverSlot === slotIndex ? "rgba(38,54,92,0.2)" : "transparent",
                 }}
@@ -174,8 +190,8 @@ export function DayAgenda({
             const entry = entryById[block.entryId];
             if (!entry) return null;
             const duration = liveResize?.id === block.id ? liveResize.duration : block.durationMinutes;
-            const top = (block.startMinute / SLOT_MINUTES) * ROW_HEIGHT;
-            const height = (duration / SLOT_MINUTES) * ROW_HEIGHT;
+            const top = ((block.startMinute / SLOT_MINUTES) - range.first) * rowHeight;
+            const height = (duration / SLOT_MINUTES) * rowHeight;
             const isDragging = drag?.payload?.kind === "block" && drag.payload.block.id === block.id;
             return (
               <div
@@ -228,6 +244,12 @@ export function DayAgenda({
           })}
         </div>
       </div>
+
+      {range.hiddenAfter > 0 && (
+        <button onClick={() => setShowWholeDay(true)} style={expanderStyle}>
+          ↓ {minutesToLabel((range.last + 1) * SLOT_MINUTES)} – {minutesToLabel((SLOTS_PER_DAY - 1) * SLOT_MINUTES)}
+        </button>
+      )}
 
       {composerSlot !== null && (
         <SlotComposer
@@ -321,3 +343,18 @@ function SlotComposer({ time, dayLabel, onSubmit, onCancel }) {
     </div>
   );
 }
+
+const expanderStyle = {
+  display: "block",
+  width: "100%",
+  maxWidth: 480,
+  minHeight: 44,
+  margin: "6px 0",
+  fontFamily: fontMono,
+  fontSize: 12,
+  color: C.inkSoft,
+  background: "transparent",
+  border: `1px dashed ${C.rule}`,
+  borderRadius: 8,
+  cursor: "pointer",
+};

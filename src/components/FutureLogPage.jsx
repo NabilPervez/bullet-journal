@@ -56,7 +56,7 @@ export function FutureLogPage({ entries, addEntry }) {
         </div>
         <div>
           <label style={fieldLabelStyle}>Date</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...fieldInputStyle, width: 160 }} />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...fieldInputStyle, minWidth: 0 }} />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label style={fieldLabelStyle}>What's coming up?</label>
@@ -88,7 +88,7 @@ export function FutureLogPage({ entries, addEntry }) {
               ) : (
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                   {items.map((e) => (
-                    <li key={e.id} style={{ fontFamily: fontBody, fontSize: 12.5, color: C.ink, display: "flex", gap: 5 }}>
+                    <li key={e.id} style={{ fontFamily: fontBody, fontSize: "var(--fs-body)", color: C.ink, display: "flex", gap: 5 }}>
                       <span style={{ color: C.inkFaint, flexShrink: 0 }}>{ENTRY_TYPES[e.type].glyph}</span>
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {e.text}

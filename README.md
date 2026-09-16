@@ -35,6 +35,8 @@ src/
   components/          one component per file
   hooks/
     useDragSession.js  pointer-based dragging shared by the journal and agenda
+    useSwipeActions.js swipe-to-complete and swipe-to-delete on an entry row
+    useViewport.js     compact / medium / expanded tier
 ```
 
 `lib/` holds everything with no React in it, which is what the unit tests cover
@@ -61,13 +63,19 @@ The agenda window is 06:00–22:00 in 30-minute slots (`lib/constants.js`).
   fire. A drag handle carries `touch-action: none`; the row around it still scrolls.
 - Anything you can do by dragging must also be doable by keyboard — the schedule picker is the
   keyboard and touch route onto the calendar.
+- Three responsive tiers (`useViewport`): compact under 600, medium to 899, expanded above. No
+  fixed pixel widths on inputs — the layout has to hold at 320pt.
+- Font sizes come from `--fs-body` / `--fs-meta` / `--fs-label`, sized for the phone first and
+  stepped down on wide screens. Don't hardcode a size for text people read daily.
 
 ## Status
 
-Sprints 0–2 of a six-sprint plan have landed: repo cleanup, module split, tests and CI; a single
-reducer with one writer, a schema migration and undo; and pointer-based scheduling with a keyboard
-route, an inline slot composer and JSON/Markdown export with JSON import.
+Sprints 0–3 of a six-sprint plan have landed: repo cleanup, module split, tests and CI; a single
+reducer with one writer, a schema migration and undo; pointer-based scheduling with a keyboard
+route, an inline slot composer and JSON/Markdown export with JSON import; and a one-handed phone
+layout — thumb-arc capture sheet, swipe actions, Log/Schedule tabs, 44pt agenda rows and a day
+pager.
 
-Still open: self-hosted fonts (an offline launch falls back to Georgia), one-handed layout work
-(Sprint 3), the migration ritual and collections (Sprint 4), and recurrence, overlapping-block lanes
+Still open: self-hosted fonts (an offline launch falls back to Georgia), edge auto-scroll while
+dragging, the migration ritual and collections (Sprint 4), and recurrence, overlapping-block lanes
 and dark mode (Sprint 5).

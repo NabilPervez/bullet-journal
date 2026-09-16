@@ -9,11 +9,13 @@ import { C, fontBody, fontMono } from "./theme";
 import { Nav } from "./components/Nav";
 import { Header } from "./components/Header";
 import { UndoToast } from "./components/UndoToast";
+import { CaptureButton, CaptureSheet } from "./components/CaptureSheet";
 import { IndexPage } from "./components/IndexPage";
 import { FutureLogPage } from "./components/FutureLogPage";
 import { MonthlyLogPage } from "./components/MonthlyLogPage";
 import { WeeklyLogPage } from "./components/WeeklyLogPage";
 import { DailyLogPage } from "./components/DailyLogPage";
+import { useIsCompact } from "./hooks/useViewport";
 
 const VIEWS = ["index", "future", "monthly", "weekly", "daily"];
 const SAVE_DEBOUNCE_MS = 200;
@@ -27,6 +29,8 @@ export default function App() {
     return VIEWS.includes(param) ? param : "daily";
   });
   const [monthOffset, setMonthOffset] = useState(0);
+  const [capturing, setCapturing] = useState(false);
+  const compact = useIsCompact();
 
   // Load once, run any pending schema migration, then hand the result to the
   // reducer. Nothing else reads or writes storage.
@@ -197,6 +201,9 @@ export default function App() {
           )}
         </main>
       </div>
+      {/* Capture, in the thumb arc, from any log. */}
+      {compact && view !== "index" && !capturing && <CaptureButton onOpen={() => setCapturing(true)} />}
+      {capturing && <CaptureSheet addEntry={addEntry} onClose={() => setCapturing(false)} />}
       <UndoToast undo={undo} onUndo={() => dispatch({ type: "undo" })} onDismiss={() => dispatch({ type: "dismiss-undo" })} />
     </div>
   );

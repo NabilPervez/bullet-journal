@@ -22,11 +22,11 @@ export function UndoToast({ undo, onUndo, onDismiss }) {
       role="status"
       aria-live="polite"
       key={undo.at ?? now}
+      className="undo-toast"
       style={{
         position: "fixed",
         left: "50%",
         transform: "translateX(-50%)",
-        bottom: "calc(var(--nav-height) + var(--safe-bottom) + 12px)",
         zIndex: 40,
         display: "flex",
         alignItems: "center",

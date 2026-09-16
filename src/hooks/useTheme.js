@@ -32,5 +32,5 @@ export function useTheme() {
 
   const toggle = useCallback(() => setTheme((t) => (t === "night" ? "day" : "night")), []);
 
-  return { theme, toggle };
+  return { theme, setTheme, toggle };
 }

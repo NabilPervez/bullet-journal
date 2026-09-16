@@ -1313,3 +1313,206 @@ body.is-dragging {
     font-size: 14px;
   }
 }
+
+/* =========================================================================
+   Checkboxes
+   Every item can be ticked. The box is 26px inside a 44px target, square so
+   it never reads as the round type sticker.
+   ========================================================================= */
+
+.check-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.check-box {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 2px solid var(--line-strong);
+  background: transparent;
+  color: transparent;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+.check-btn:hover .check-box {
+  border-color: var(--accent);
+}
+
+.check-btn:active .check-box {
+  transform: scale(0.88);
+}
+
+.check-btn[aria-checked="true"] .check-box {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* The type colour moves to the edge of the card when a checkbox takes the
+   leading position, so colour still says what kind of entry this is. */
+.entry-body[data-type="goal"] { border-left: 4px solid var(--type-goal); }
+.entry-body[data-type="task"] { border-left: 4px solid var(--type-task); }
+.entry-body[data-type="event"] { border-left: 4px solid var(--type-event); }
+.entry-body[data-type="note"] { border-left: 4px solid var(--type-note); }
+
+/* =========================================================================
+   Motion
+   Fast, short, and all of it switched off by prefers-reduced-motion above.
+   ========================================================================= */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes page-turn {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(-7deg) translateX(18px);
+    transform-origin: left center;
+  }
+}
+
+/* A new entry arrives rather than appearing. */
+.enter {
+  animation: rise-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* A list settles in order, so the eye has somewhere to start. */
+.stagger > *:nth-child(1) { animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.01s both; }
+.stagger > *:nth-child(2) { animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both; }
+.stagger > *:nth-child(3) { animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.07s both; }
+.stagger > *:nth-child(4) { animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+.stagger > *:nth-child(5) { animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.13s both; }
+.stagger > *:nth-child(6) { animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both; }
+.stagger > *:nth-child(7) { animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.19s both; }
+.stagger > *:nth-child(n + 8) { animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both; }
+
+/* Changing view turns the page. */
+.page-turn {
+  animation: page-turn 0.26s cubic-bezier(0.32, 0.72, 0.28, 1) both;
+}
+
+/* The strike-through is drawn, not switched on. */
+.entry-text {
+  position: relative;
+  text-decoration: none;
+}
+
+.entry-text[data-done="true"] {
+  text-decoration: none;
+}
+
+.entry-text::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 55%;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.entry-text[data-done="true"]::after {
+  transform: scaleX(1);
+}
+
+/* =========================================================================
+   Settings
+   ========================================================================= */
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+/* =========================================================================
+   Onboarding
+   ========================================================================= */
+
+.onboard {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding: calc(var(--safe-top) + var(--s5)) var(--s4) calc(var(--safe-bottom) + var(--s4));
+  animation: fade-in 0.2s ease-out;
+}
+
+.onboard-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--s5);
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.onboard-art {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+.onboard-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--s2);
+}
+
+.onboard-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  transition: background 0.2s ease, width 0.2s ease;
+}
+
+.onboard-dot[data-active="true"] {
+  width: 22px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+}
+
+.onboard-actions {
+  display: flex;
+  gap: var(--s2);
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+}

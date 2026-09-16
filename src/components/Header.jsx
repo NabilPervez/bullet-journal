@@ -1,4 +1,4 @@
-export function Header({ pageTitle, saveError, readonly, onRetrySave, theme, onToggleTheme }) {
+export function Header({ pageTitle, saveError, readonly, onRetrySave, theme, onToggleTheme, onOpenSettings, settingsOpen }) {
   const dateLabel = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 
   // Two different failures, two different messages. The old banner blamed the
@@ -25,6 +25,16 @@ export function Header({ pageTitle, saveError, readonly, onRetrySave, theme, onT
             )}
           </div>
         )}
+        <button
+          className="icon-btn"
+          onClick={onOpenSettings}
+          aria-label="Settings"
+          aria-current={settingsOpen ? "page" : undefined}
+          title="Settings"
+          style={settingsOpen ? { background: "var(--accent)", color: "var(--on-accent)" } : undefined}
+        >
+          ⚙
+        </button>
         <button
           className="icon-btn"
           onClick={onToggleTheme}

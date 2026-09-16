@@ -1143,7 +1143,39 @@ body.is-dragging {
   opacity: 0.7;
 }
 
-/* ---------- Week pager ---------- */
+/* ---------- Week: one day per row ---------- */
+
+.day-row {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.day-row[data-today="true"] {
+  border-color: var(--accent);
+}
+
+.day-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3);
+  border-bottom: 1px solid var(--line);
+}
+
+.day-row[data-today="true"] .day-row-head {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.day-row[data-today="true"] .day-stamp {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ---------- Week pager (unused by the week view; kept for the month) ---------- */
 
 .week-pager {
   display: flex;

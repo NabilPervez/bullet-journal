@@ -64,8 +64,10 @@ content between the header and the nav scrolls.
 ### Today
 Your day, in two halves.
 
-- **Log** — the rapid log: everything you've written, newest first, goals at the top. Tick a
-  checkbox to complete something and it greys out and gets struck through.
+- **Log** — the rapid log. Anything due today sits in its own section at the top; everything else
+  follows. Both are bundled by kind — goals, tasks, events, notes — and ordered by when they're due,
+  so the soonest thing is nearest the top and undated entries sit at the bottom of their bundle.
+  Tick a checkbox to complete something and it greys out and gets struck through.
 - **Schedule** — the day in half-hour rows from 6am to 10pm. On a phone it opens on the busy part of
   the day, with the quiet ends one tap away.
 
@@ -74,7 +76,8 @@ Every day of the month down the left as a date stamp, with what's filed on it. B
 dump: the month's open tasks and goals, and a box to throw new ones into.
 
 ### Week
-Five days side by side — swipe between them on a phone. Each day can be added to in place.
+Today and the six days after it, one day per row. Each row shows what's filed on that day, in the
+order it's coming, and can be added to in place.
 
 ### Future
 Where things are, starting with what hasn't happened yet.
@@ -148,6 +151,7 @@ src/
     model.js           entry types, signifiers, ids, entry filing rules
     agenda.js          which part of the day to show
     gestures.js        swipe thresholds
+    ordering.js        how today's log is sectioned, bundled and sorted
     journalReducer.js  every change to the journal, in one place
     migrations.js      schema version and upgrades
     storage.js         localStorage read/write

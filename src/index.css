@@ -108,7 +108,11 @@ body,
 #root {
   margin: 0;
   padding: 0;
-  min-height: 100svh;
+  height: 100%;
+  /* Only the app's own scroll region scrolls. This stops the page itself
+     being panned or rubber-banded around on a phone. */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
@@ -559,13 +563,31 @@ input[type="time"] {
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100svh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
+@supports not (height: 100dvh) {
+  .app-shell {
+    height: 100vh;
+    max-height: 100vh;
+  }
+}
+
+/* The one scroll region in the app. */
 .app-main {
-  flex: 1;
+  flex: 1 1 auto;
+  order: 1;
   min-width: 0;
-  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + var(--s5));
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Vertical only: no sideways drift. */
+  touch-action: pan-y;
+  padding-bottom: var(--s5);
 }
 
 .app-header {
@@ -603,16 +625,13 @@ input[type="time"] {
 /* ---------- Bottom nav ---------- */
 
 .nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: 0 0 auto;
+  order: 2;
   z-index: 30;
   display: flex;
   height: calc(var(--nav-height) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter: blur(16px);
+  background: var(--surface);
   border-top: 1px solid var(--line);
 }
 
@@ -717,7 +736,8 @@ input[type="time"] {
 .sheet {
   width: 100%;
   max-width: 560px;
-  max-height: 88svh;
+  max-height: 88dvh;
+  touch-action: pan-y;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--surface);
@@ -1129,6 +1149,7 @@ body.is-dragging {
   display: flex;
   gap: var(--s3);
   overflow-x: auto;
+  touch-action: pan-x;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   margin: 0 calc(-1 * var(--s4));
@@ -1225,15 +1246,13 @@ body.is-dragging {
   }
 
   .app-main {
-    padding-bottom: 0;
+    padding-bottom: var(--s5);
   }
 
   .nav {
-    position: sticky;
-    top: 0;
-    bottom: auto;
+    order: 0;
     width: 232px;
-    height: 100svh;
+    height: 100%;
     flex-direction: column;
     align-items: stretch;
     gap: var(--s1);

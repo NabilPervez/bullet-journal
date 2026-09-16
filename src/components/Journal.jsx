@@ -44,7 +44,9 @@ export function Journal({
         {entries.length === 0 && (
           <li className="empty">
             <p style={{ margin: 0, fontWeight: 600 }}>Nothing logged yet</p>
-            <p className="meta" style={{ marginTop: "var(--s2)" }}>Tap + to write the first thing down.</p>
+            <p className="meta" style={{ marginTop: "var(--s2)" }}>
+              {showComposer ? "Use the box above to write the first thing down." : "Tap + to write the first thing down."}
+            </p>
           </li>
         )}
         {ordered.map((entry) => (

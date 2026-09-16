@@ -28,12 +28,12 @@ export default function App() {
 
   const [view, setView] = useState(() => {
     const param = new URLSearchParams(window.location.search).get("view");
-    // ?view=future still works; the Future Log is now a tab inside the Index.
+    // Both ?view=future and ?view=index land on the same screen.
     if (param === "future") return "index";
     return VIEWS.includes(param) ? param : "daily";
   });
   const [indexTab] = useState(() =>
-    new URLSearchParams(window.location.search).get("view") === "future" ? "future" : "index"
+    new URLSearchParams(window.location.search).get("view") === "index" ? "index" : "future"
   );
   const [monthOffset, setMonthOffset] = useState(0);
   const [capturing, setCapturing] = useState(false);
@@ -60,6 +60,13 @@ export default function App() {
 
   // One writer. It watches the reduced state instead of being called from
   // eight different mutators, which is what made concurrent edits lose data.
+  // The scroll region belongs to the app, not the document, so changing view
+  // has to take it back to the top itself.
+  const mainRef = useRef(null);
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [view]);
+
   const saveTimer = useRef(null);
   useEffect(() => {
     if (status !== "ready") return undefined;
@@ -152,12 +159,12 @@ export default function App() {
     );
   }
 
-  const pageTitles = { index: "Index", monthly: "Month", weekly: "Week", daily: "Today", settings: "Settings" };
+  const pageTitles = { index: "Future", monthly: "Month", weekly: "Week", daily: "Today", settings: "Settings" };
 
   return (
     <div className="app-shell">
       <Nav view={view} onChangeView={setView} />
-      <div className="app-main">
+      <div className="app-main" ref={mainRef}>
         <Header
           pageTitle={pageTitles[view]}
           saveError={saveError}

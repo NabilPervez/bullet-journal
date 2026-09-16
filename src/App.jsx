@@ -1,167 +1,125 @@
-import { useState, useEffect } from "react";
-import { loadList, saveList } from "./lib/storage";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { loadJournal, saveJournal } from "./lib/storage";
+import { migrate, SCHEMA_VERSION } from "./lib/migrations";
+import { initialState, journalReducer } from "./lib/journalReducer";
 import { uid } from "./lib/model";
-import { SLOT_MINUTES, DEFAULT_EVENT_DURATION } from "./lib/constants";
-import { hhmmToStartMinute, startMinuteToHHMM, monthOffsetFromKey } from "./lib/dates";
+import { SLOT_MINUTES } from "./lib/constants";
+import { monthOffsetFromKey } from "./lib/dates";
 import { C, fontBody, fontMono } from "./theme";
 import { Nav } from "./components/Nav";
 import { Header } from "./components/Header";
+import { UndoToast } from "./components/UndoToast";
 import { IndexPage } from "./components/IndexPage";
 import { FutureLogPage } from "./components/FutureLogPage";
 import { MonthlyLogPage } from "./components/MonthlyLogPage";
 import { WeeklyLogPage } from "./components/WeeklyLogPage";
 import { DailyLogPage } from "./components/DailyLogPage";
 
+const VIEWS = ["index", "future", "monthly", "weekly", "daily"];
+const SAVE_DEBOUNCE_MS = 200;
+
 export default function App() {
-  const [entries, setEntries] = useState([]);
-  const [blocks, setBlocks] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+  const [state, dispatch] = useReducer(journalReducer, initialState);
+  const { entries, blocks, status, version, saveError, undo } = state;
+
   const [view, setView] = useState(() => {
     const param = new URLSearchParams(window.location.search).get("view");
-    return ["index", "future", "monthly", "weekly", "daily"].includes(param) ? param : "daily";
-  }); // 'index' | 'future' | 'monthly' | 'weekly' | 'daily'
+    return VIEWS.includes(param) ? param : "daily";
+  });
   const [monthOffset, setMonthOffset] = useState(0);
   const [dragEntryId, setDragEntryId] = useState(null);
-  const [saveError, setSaveError] = useState(false);
 
+  // Load once, run any pending schema migration, then hand the result to the
+  // reducer. Nothing else reads or writes storage.
   useEffect(() => {
-    (async () => {
-      const [e, b] = await Promise.all([loadList("entries"), loadList("blocks")]);
-      setEntries(e.sort((a, c) => c.createdAt - a.createdAt));
-      setBlocks(b);
-      setLoaded(true);
-    })();
+    const stored = loadJournal();
+    const migrated = migrate(stored, stored.version);
+    dispatch({
+      type: "hydrate",
+      entries: migrated.entries,
+      blocks: migrated.blocks,
+      version: migrated.version,
+      readonly: stored.readonly,
+    });
+    if (stored.readonly) {
+      console.warn("Marginalia: stored data could not be read; running read-only", stored.damaged);
+    }
   }, []);
 
-  async function addEntry(text, type, meta = {}) {
-    const id = uid();
-    let block = null;
-    if (type === "event" && meta.eventDate && meta.eventTime) {
-      const startMinute = hhmmToStartMinute(meta.eventTime);
-      if (startMinute !== null) {
-        block = { id: uid(), entryId: id, date: meta.eventDate, startMinute, durationMinutes: DEFAULT_EVENT_DURATION };
-      }
-    }
+  // One writer. It watches the reduced state instead of being called from
+  // eight different mutators, which is what made concurrent edits lose data.
+  const saveTimer = useRef(null);
+  useEffect(() => {
+    if (status !== "ready") return undefined;
+
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      const result = saveJournal({ entries, blocks, version: version || SCHEMA_VERSION });
+      dispatch(result.ok ? { type: "save-ok" } : { type: "save-failed", error: result.error });
+    }, SAVE_DEBOUNCE_MS);
+
+    return () => clearTimeout(saveTimer.current);
+  }, [entries, blocks, status, version]);
+
+  const retrySave = useCallback(() => {
+    const result = saveJournal({ entries, blocks, version: version || SCHEMA_VERSION });
+    dispatch(result.ok ? { type: "save-ok" } : { type: "save-failed", error: result.error });
+  }, [entries, blocks, version]);
+
+  // ---- Action creators. Ids are generated here so the reducer stays pure. ----
+
+  const addEntry = useCallback((text, type, meta = {}) => {
     const entry = {
-      id,
+      id: uid(),
       text,
       type,
       createdAt: Date.now(),
       done: false,
-      scheduledBlockId: block ? block.id : null,
+      scheduledBlockId: null,
       signifier: meta.signifier || null,
       dueDate: meta.dueDate || null,
       eventDate: meta.eventDate || null,
       eventTime: meta.eventTime || null,
       eventLocation: meta.eventLocation || null,
     };
-    const nextEntries = [entry, ...entries];
-    setEntries(nextEntries);
-    const ok1 = await saveList("entries", nextEntries);
-    if (!ok1) setSaveError(true);
-    if (block) {
-      const nextBlocks = [...blocks, block];
-      setBlocks(nextBlocks);
-      const ok2 = await saveList("blocks", nextBlocks);
-      if (!ok2) setSaveError(true);
-    }
+    dispatch({ type: "add-entry", entry, blockId: uid() });
     return entry;
-  }
+  }, []);
 
-  async function updateEntry(entry, patch) {
-    const merged = { ...entry, ...patch };
-    let nextBlocks = blocks;
-    let blocksChanged = false;
+  const updateEntry = useCallback((entry, patch) => {
+    dispatch({ type: "update-entry", id: entry.id, patch, blockId: uid() });
+  }, []);
 
-    if (merged.type === "event" && merged.eventDate && merged.eventTime) {
-      const startMinute = hhmmToStartMinute(merged.eventTime);
-      if (startMinute !== null) {
-        if (merged.scheduledBlockId) {
-          nextBlocks = blocks.map((b) => (b.id === merged.scheduledBlockId ? { ...b, date: merged.eventDate, startMinute } : b));
-        } else {
-          const block = { id: uid(), entryId: entry.id, date: merged.eventDate, startMinute, durationMinutes: DEFAULT_EVENT_DURATION };
-          nextBlocks = [...blocks, block];
-          merged.scheduledBlockId = block.id;
-        }
-        blocksChanged = true;
-      }
-    }
+  const toggleEntryDone = useCallback((entry) => {
+    dispatch({ type: "toggle-done", id: entry.id });
+  }, []);
 
-    const nextEntries = entries.map((e) => (e.id === entry.id ? merged : e));
-    setEntries(nextEntries);
-    const ok1 = await saveList("entries", nextEntries);
-    if (!ok1) setSaveError(true);
-    if (blocksChanged) {
-      setBlocks(nextBlocks);
-      const ok2 = await saveList("blocks", nextBlocks);
-      if (!ok2) setSaveError(true);
-    }
-  }
+  const deleteEntry = useCallback((entry) => {
+    dispatch({ type: "delete-entry", id: entry.id });
+  }, []);
 
-  async function toggleEntryDone(entry) {
-    await updateEntry(entry, { done: !entry.done });
-  }
+  const scheduleEntry = useCallback((entry, date, startMinute, durationMinutes = SLOT_MINUTES) => {
+    dispatch({ type: "schedule-entry", entryId: entry.id, date, startMinute, durationMinutes, blockId: uid() });
+  }, []);
 
-  async function deleteEntry(entry) {
-    if (entry.scheduledBlockId) {
-      const nextBlocks = blocks.filter((b) => b.id !== entry.scheduledBlockId);
-      setBlocks(nextBlocks);
-      await saveList("blocks", nextBlocks);
-    }
-    const nextEntries = entries.filter((e) => e.id !== entry.id);
-    setEntries(nextEntries);
-    await saveList("entries", nextEntries);
-  }
+  const moveBlock = useCallback((block, date, startMinute) => {
+    dispatch({ type: "move-block", blockId: block.id, date, startMinute });
+  }, []);
 
-  async function scheduleEntry(entry, date, startMinute, durationMinutes = SLOT_MINUTES) {
-    const block = { id: uid(), entryId: entry.id, date, startMinute, durationMinutes };
-    const nextBlocks = [...blocks, block];
-    setBlocks(nextBlocks);
-    await saveList("blocks", nextBlocks);
-    const hhmm = startMinuteToHHMM(startMinute);
-    const nextEntries = entries.map((e) =>
-      e.id === entry.id
-        ? { ...e, scheduledBlockId: block.id, ...(e.type === "event" ? { eventDate: date, eventTime: hhmm } : {}) }
-        : e
-    );
-    setEntries(nextEntries);
-    await saveList("entries", nextEntries);
-  }
+  const unscheduleBlock = useCallback((block) => {
+    dispatch({ type: "unschedule-block", blockId: block.id });
+  }, []);
 
-  async function moveBlock(block, date, startMinute) {
-    const next = blocks.map((b) => (b.id === block.id ? { ...b, date, startMinute } : b));
-    setBlocks(next);
-    await saveList("blocks", next);
-    const owner = entries.find((e) => e.id === block.entryId);
-    if (owner && owner.type === "event") {
-      const hhmm = startMinuteToHHMM(startMinute);
-      const nextEntries = entries.map((e) => (e.id === owner.id ? { ...e, eventDate: date, eventTime: hhmm } : e));
-      setEntries(nextEntries);
-      await saveList("entries", nextEntries);
-    }
-  }
-
-  async function unscheduleBlock(block) {
-    const nextBlocks = blocks.filter((b) => b.id !== block.id);
-    setBlocks(nextBlocks);
-    await saveList("blocks", nextBlocks);
-    const nextEntries = entries.map((e) => (e.id === block.entryId ? { ...e, scheduledBlockId: null } : e));
-    setEntries(nextEntries);
-    await saveList("entries", nextEntries);
-  }
-
-  async function resizeBlock(block, durationMinutes) {
-    const next = blocks.map((b) => (b.id === block.id ? { ...b, durationMinutes } : b));
-    setBlocks(next);
-    await saveList("blocks", next);
-  }
+  const resizeBlock = useCallback((block, durationMinutes) => {
+    dispatch({ type: "resize-block", blockId: block.id, durationMinutes });
+  }, []);
 
   function jumpToMonth(key) {
     setMonthOffset(monthOffsetFromKey(key));
     setView("monthly");
   }
 
-  if (!loaded) {
+  if (status === "loading") {
     return (
       <div style={{ minHeight: "100vh", background: C.paper, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fontMono, color: C.inkFaint, fontSize: 12 }}>
         Loading journal…
@@ -175,7 +133,12 @@ export default function App() {
     <div className="app-shell" style={{ background: C.paper, color: C.ink, fontFamily: fontBody }}>
       <Nav view={view} onChangeView={setView} />
       <div className="app-main">
-        <Header pageTitle={pageTitles[view]} saveError={saveError} />
+        <Header
+          pageTitle={pageTitles[view]}
+          saveError={saveError}
+          readonly={status === "readonly"}
+          onRetrySave={retrySave}
+        />
         <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px 32px" }}>
           {view === "index" && <IndexPage entries={entries} onJumpToMonth={jumpToMonth} />}
           {view === "future" && <FutureLogPage entries={entries} addEntry={addEntry} />}
@@ -218,6 +181,7 @@ export default function App() {
           )}
         </main>
       </div>
+      <UndoToast undo={undo} onUndo={() => dispatch({ type: "undo" })} onDismiss={() => dispatch({ type: "dismiss-undo" })} />
     </div>
   );
 }

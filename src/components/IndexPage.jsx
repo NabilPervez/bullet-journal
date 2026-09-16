@@ -1,19 +1,22 @@
 import { useMemo } from "react";
-import { entryRelevantDate } from "../lib/model";
+import { countByType, entryRelevantDate, summarizeCounts } from "../lib/model";
 import { monthLabelFromKey } from "../lib/dates";
 import { C, fontBody, fontDisplay, fontMono } from "../theme";
 
 export function IndexPage({ entries, onJumpToMonth }) {
   const grouped = useMemo(() => {
-    const map = new Map();
+    // Group by month, then count from ENTRY_TYPES so a newly added type shows
+    // up here by construction — goal was being counted into a bucket the
+    // summary line never printed.
+    const byMonth = new Map();
     entries.forEach((e) => {
       const key = entryRelevantDate(e).slice(0, 7);
-      if (!map.has(key)) map.set(key, { key, tasks: 0, events: 0, notes: 0, total: 0 });
-      const g = map.get(key);
-      g[e.type + "s"] = (g[e.type + "s"] || 0) + 1;
-      g.total += 1;
+      if (!byMonth.has(key)) byMonth.set(key, []);
+      byMonth.get(key).push(e);
     });
-    return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key));
+    return Array.from(byMonth.entries())
+      .map(([key, group]) => ({ key, total: group.length, summary: summarizeCounts(countByType(group)) }))
+      .sort((a, b) => a.key.localeCompare(b.key));
   }, [entries]);
 
   return (
@@ -36,13 +39,13 @@ export function IndexPage({ entries, onJumpToMonth }) {
             >
               <div>
                 <p style={{ fontFamily: fontBody, fontSize: 15, margin: 0, color: C.ink }}>{monthLabelFromKey(g.key)}</p>
-                <p style={{ fontFamily: fontMono, fontSize: 10, color: C.inkFaint, margin: "2px 0 0" }}>
-                  {g.tasks || 0} tasks · {g.events || 0} events · {g.notes || 0} notes
+                <p style={{ fontFamily: fontMono, fontSize: 12, color: C.inkFaint, margin: "2px 0 0" }}>
+                  {g.summary}
                 </p>
               </div>
               <button
                 onClick={() => onJumpToMonth(g.key)}
-                style={{ fontFamily: fontMono, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", padding: "6px 12px", borderRadius: 6, border: "none", background: C.accent, color: C.paper, cursor: "pointer", flexShrink: 0 }}
+                style={{ fontFamily: fontMono, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", minHeight: 44, padding: "0 16px", borderRadius: 6, border: "none", background: C.accent, color: C.paper, cursor: "pointer", flexShrink: 0 }}
               >
                 View →
               </button>

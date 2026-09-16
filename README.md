@@ -1,16 +1,63 @@
-# React + Vite
+# Marginalia
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A digital bullet journal: rapid logging, an Index, a Future Log, a Monthly Log, a Weekly Log, and a
+daily time-blocking agenda. Installable as a PWA and usable offline; entries live on the device.
 
-Currently, two official plugins are available:
+## Running it
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server |
+| `npm run build` | Production build into `dist/` (also generates the service worker) |
+| `npm run preview` | Serve the built output |
+| `npm run lint` | Oxlint, including the React hooks rules |
+| `npm run test` | Vitest, once |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run verify` | lint + test + build — what CI runs |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Layout
 
-## Expanding the Oxlint configuration
+```
+src/
+  App.jsx              state, persistence and view routing
+  index.css            shell layout, responsive tiers, safe-area insets
+  theme.js             colour tokens, type stacks, shared control styles
+  lib/
+    constants.js       agenda grid window and slot geometry
+    dates.js           local-date arithmetic and formatting
+    model.js           entry types, signifiers, ids, entry filing rules
+    storage.js         localStorage read/write
+  components/          one component per file
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+`lib/` holds everything with no React in it, which is what the unit tests cover
+(`src/lib/*.test.js`). Components render; they do not own persistence.
+
+## Data model
+
+Two lists in `localStorage`, under `marginalia:entries` and `marginalia:blocks`.
+
+An **entry** is a journal line: `task`, `event`, `note` or `goal`, optionally carrying a signifier
+(priority, inspiration), a due date, or an event date, time and location. A **block** is a placement
+of an entry on the agenda: a date, a start offset in minutes from the top of the grid window, and a
+duration. Scheduling an entry creates a block and records its id on the entry.
+
+The agenda window is 06:00–22:00 in 30-minute slots (`lib/constants.js`).
+
+## Conventions
+
+- Dates are handled as local `YYYY-MM-DD` strings. Never round-trip a journal date through UTC.
+- Any focusable input stays at 16px or larger; below that, iOS Safari zooms the page on focus.
+- Touch targets are at least 44pt on coarse pointers. Nothing daily may be hover-only.
+- `env(safe-area-inset-bottom)` is respected by the bottom nav; do not give it a flat height.
+
+## Status
+
+Sprint 0 of a six-sprint plan is landing: repo cleanup, module split, tests, CI, error boundary and
+the first phone fixes. Known open items — write races between rapid actions, touch dragging, and
+export/import — are tracked in the migration plan.

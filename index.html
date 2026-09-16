@@ -28,8 +28,13 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary" />
 
-    <!-- Fonts -->
+    <!-- Fonts: linked here rather than @import-ed from CSS, which blocked first paint -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
   </head>
   <body>
     <div id="root"></div>

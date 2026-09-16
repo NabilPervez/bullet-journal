@@ -1,6 +1,7 @@
+// Four destinations. The Future Log used to have its own tab; it is a way of
+// looking at what's ahead, so it lives inside the Index next to what's behind.
 const NAV_ITEMS = [
   { id: "index", label: "Index", glyph: "≡" },
-  { id: "future", label: "Future", glyph: "→" },
   { id: "monthly", label: "Month", glyph: "▦" },
   { id: "weekly", label: "Week", glyph: "▤" },
   { id: "daily", label: "Today", glyph: "•" },
@@ -9,7 +10,7 @@ const NAV_ITEMS = [
 export function Nav({ view, onChangeView }) {
   return (
     <nav aria-label="Collections" className="nav">
-      <div className="nav-brand">Marginalia</div>
+      <div className="nav-brand">Bullet Journal</div>
       {NAV_ITEMS.map(({ id, label, glyph }) => (
         <button
           key={id}

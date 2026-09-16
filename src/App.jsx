@@ -10,14 +10,16 @@ import { Header } from "./components/Header";
 import { UndoToast } from "./components/UndoToast";
 import { CaptureButton, CaptureSheet } from "./components/CaptureSheet";
 import { IndexPage } from "./components/IndexPage";
-import { FutureLogPage } from "./components/FutureLogPage";
 import { MonthlyLogPage } from "./components/MonthlyLogPage";
 import { WeeklyLogPage } from "./components/WeeklyLogPage";
 import { DailyLogPage } from "./components/DailyLogPage";
+import { SettingsPage } from "./components/SettingsPage";
+import { Onboarding } from "./components/Onboarding";
 import { useIsCompact } from "./hooks/useViewport";
 import { useTheme } from "./hooks/useTheme";
+import { useOnboarding } from "./hooks/useOnboarding";
 
-const VIEWS = ["index", "future", "monthly", "weekly", "daily"];
+const VIEWS = ["index", "monthly", "weekly", "daily", "settings"];
 const SAVE_DEBOUNCE_MS = 200;
 
 export default function App() {
@@ -26,12 +28,18 @@ export default function App() {
 
   const [view, setView] = useState(() => {
     const param = new URLSearchParams(window.location.search).get("view");
+    // ?view=future still works; the Future Log is now a tab inside the Index.
+    if (param === "future") return "index";
     return VIEWS.includes(param) ? param : "daily";
   });
+  const [indexTab] = useState(() =>
+    new URLSearchParams(window.location.search).get("view") === "future" ? "future" : "index"
+  );
   const [monthOffset, setMonthOffset] = useState(0);
   const [capturing, setCapturing] = useState(false);
   const compact = useIsCompact();
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme, setTheme, toggle: toggleTheme } = useTheme();
+  const { showTour, finish: finishTour, replay: replayTour } = useOnboarding();
 
   // Load once, run any pending schema migration, then hand the result to the
   // reducer. Nothing else reads or writes storage.
@@ -144,7 +152,7 @@ export default function App() {
     );
   }
 
-  const pageTitles = { index: "Index", future: "Future", monthly: "Month", weekly: "Week", daily: "Today" };
+  const pageTitles = { index: "Index", monthly: "Month", weekly: "Week", daily: "Today", settings: "Settings" };
 
   return (
     <div className="app-shell">
@@ -157,18 +165,30 @@ export default function App() {
           onRetrySave={retrySave}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onOpenSettings={() => setView("settings")}
+          settingsOpen={view === "settings"}
         />
         <main className="page">
+          <div className="page-turn" key={view}>
           {view === "index" && (
             <IndexPage
               entries={entries}
-              blocks={blocks}
-              version={version || SCHEMA_VERSION}
+              addEntry={addEntry}
               onJumpToMonth={jumpToMonth}
-              onImport={importJournal}
+              initialTab={indexTab}
             />
           )}
-          {view === "future" && <FutureLogPage entries={entries} addEntry={addEntry} />}
+          {view === "settings" && (
+            <SettingsPage
+              entries={entries}
+              blocks={blocks}
+              version={version || SCHEMA_VERSION}
+              onImport={importJournal}
+              theme={theme}
+              onSetTheme={setTheme}
+              onReplayTour={replayTour}
+            />
+          )}
           {view === "monthly" && (
             <MonthlyLogPage
               entries={entries}
@@ -202,12 +222,16 @@ export default function App() {
               moveBlock={moveBlock}
             />
           )}
+          </div>
         </main>
       </div>
       {/* Capture, in the thumb arc, from any log. */}
-      {compact && view !== "index" && !capturing && <CaptureButton onOpen={() => setCapturing(true)} />}
+      {compact && view !== "index" && view !== "settings" && !capturing && !showTour && (
+        <CaptureButton onOpen={() => setCapturing(true)} />
+      )}
       {capturing && <CaptureSheet addEntry={addEntry} onClose={() => setCapturing(false)} />}
       <UndoToast undo={undo} onUndo={() => dispatch({ type: "undo" })} onDismiss={() => dispatch({ type: "dismiss-undo" })} />
+      {showTour && <Onboarding onDone={finishTour} />}
     </div>
   );
 }

@@ -128,7 +128,7 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
   }
 
   return (
-    <li className="entry-row" style={{ opacity: isDragging ? 0.4 : 1 }}>
+    <li className="entry-row enter" style={{ opacity: isDragging ? 0.4 : 1 }}>
       {offset !== 0 && (
         <div
           aria-hidden="true"
@@ -147,6 +147,7 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
       <div
         {...swipeHandlers}
         className="entry-body"
+        data-type={entry.type}
         style={{
           transform: `translateX(${offset}px)`,
           transition: offset === 0 ? "transform 0.18s ease-out" : "none",
@@ -164,15 +165,16 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
           </span>
         )}
 
+        {/* Tick it off. The type colour moved to the card's left edge so the
+            checkbox can lead the row, where a checkbox belongs. */}
         <button
-          className="sticker"
-          data-type={entry.type}
-          data-done={entry.done ? "true" : "false"}
+          className="check-btn"
+          role="checkbox"
+          aria-checked={Boolean(entry.done)}
           onClick={onToggle}
-          aria-pressed={Boolean(entry.done)}
           aria-label={entry.done ? `Mark "${entry.text}" as not done` : `Mark "${entry.text}" as done`}
         >
-          {entry.done ? "✓" : meta.glyph}
+          <span className="check-box" aria-hidden="true">✓</span>
         </button>
 
         <div className="grow stack gap-2" onDoubleClick={startEdit}>
@@ -190,16 +192,22 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
             {entry.done && <span className="stamp">Done</span>}
           </div>
 
-          {(tickets.length > 0 || entry.scheduledBlockId) && (
-            <div className="row gap-2 wrap">
-              {tickets.map((t) => (
-                <span key={t} className="ticket">{t}</span>
-              ))}
-              {entry.scheduledBlockId && (
-                <span className="ticket" style={{ color: "var(--accent-ink)" }} title="On the schedule">▸ Scheduled</span>
-              )}
-            </div>
-          )}
+          <div className="row gap-2 wrap">
+            <span
+              className="sticker sticker-sm sticker-static"
+              data-type={entry.type}
+              title={meta.label}
+              aria-label={meta.label}
+            >
+              {meta.glyph}
+            </span>
+            {tickets.map((t) => (
+              <span key={t} className="ticket">{t}</span>
+            ))}
+            {entry.scheduledBlockId && (
+              <span className="ticket" style={{ color: "var(--accent-ink)" }} title="On the schedule">▸ Scheduled</span>
+            )}
+          </div>
         </div>
 
         <div className="entry-actions">

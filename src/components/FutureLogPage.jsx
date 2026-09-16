@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { formatDateShort, getMonthInfo } from "../lib/dates";
 import { ENTRY_TYPES, entryRelevantDate, isDatedType } from "../lib/model";
 
-export function FutureLogPage({ entries, addEntry }) {
+// Rendered inside the Index page, under the "Ahead" tab.
+export function FutureLog({ entries, addEntry }) {
   const months = useMemo(() => Array.from({ length: 12 }, (_, i) => getMonthInfo(i)), []);
   const [text, setText] = useState("");
   const [type, setType] = useState("task");
@@ -68,7 +69,7 @@ export function FutureLogPage({ entries, addEntry }) {
         <button type="submit" className="btn btn-primary btn-block" disabled={!canAdd}>Add to the future</button>
       </form>
 
-      <div className="grid-future">
+      <div className="grid-future stagger">
         {months.map((m) => {
           const items = itemsForMonth(m.key);
           return (

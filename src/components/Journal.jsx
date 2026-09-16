@@ -40,7 +40,7 @@ export function Journal({
 
       {open > 0 && <p className="eyebrow">{open} open</p>}
 
-      <ul className="stack gap-2" style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="Journal entries">
+      <ul className="stack gap-2 stagger" style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="Journal entries">
         {entries.length === 0 && (
           <li className="empty">
             <p style={{ margin: 0, fontWeight: 600 }}>Nothing logged yet</p>

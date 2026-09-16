@@ -56,7 +56,7 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
         </div>
       </div>
 
-      <div className="week-pager">
+      <div className="week-pager stagger">
         {days.map((date) => {
           const iso = toISODate(date);
           const isToday = iso === toISODate(new Date());

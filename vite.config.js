@@ -14,9 +14,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Marginalia — Bullet Journal & Time Blocker',
-        short_name: 'Marginalia',
-        description: 'A digital bullet journal: rapid logging, an Index, Future Log, Monthly Log, and a daily time-blocking agenda.',
+        name: 'Digital Bullet Journal',
+        short_name: 'Bullet Journal',
+        description: 'A digital bullet journal: rapid logging, an index, a future log, a monthly log, and a daily time-blocking agenda.',
         theme_color: '#0B0B0F',
         background_color: '#0B0B0F',
         display: 'standalone',
@@ -31,9 +31,9 @@ export default defineConfig({
           { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ],
         shortcuts: [
-          { name: 'Daily Log', url: '/?view=daily', description: 'Rapid log + today\'s schedule' },
-          { name: 'Monthly Log', url: '/?view=monthly', description: 'Days down the margin + brain dump' },
-          { name: 'Future Log', url: '/?view=future', description: 'The next twelve months' },
+          { name: 'Today', url: '/?view=daily', description: 'Rapid log and schedule' },
+          { name: 'Month', url: '/?view=monthly', description: 'Days down the margin and a brain dump' },
+          { name: 'Future', url: '/?view=future', description: 'The next twelve months' },
           { name: 'Index', url: '/?view=index', description: 'Table of contents' }
         ]
       },

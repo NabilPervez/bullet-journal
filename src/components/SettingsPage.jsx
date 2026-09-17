@@ -65,9 +65,18 @@ export function SettingsPage({ entries, blocks, version, onImport, theme, onSetT
         <button className="btn btn-ghost btn-block" onClick={onReplayTour}>Show the walkthrough again</button>
       </div>
 
-      <p className="meta">
-        Digital Bullet Journal · everything is stored in this browser. Clearing site data clears the journal.
-      </p>
+      <div className="panel stack gap-3">
+        <h3 style={{ fontSize: "var(--fs-title)" }}>Privacy</h3>
+        <p className="meta">
+          Your journal is stored only on this device. Nothing you write is sent anywhere. Clearing the app's
+          storage, or uninstalling it, clears the journal — export a copy first.
+        </p>
+        {/* A plain same-origin link: in the Android app it opens inside the app
+            window, and the service worker is told to leave /privacy alone. */}
+        <a className="btn btn-ghost btn-block" href="/privacy">Read the privacy policy</a>
+      </div>
+
+      <p className="meta">Digital Bullet Journal · Nabil Pervez Consulting</p>
     </section>
   );
 }

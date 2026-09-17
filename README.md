@@ -152,6 +152,21 @@ npm run dev
 | `npm run test` | Vitest, once |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run verify` | lint + test + build — what CI runs |
+| `npm run icons` | Regenerate every icon and the Play Store graphics from source |
+| `npm run twa:check` | Check a deployed site against Android/Play requirements (defaults to production) |
+
+## Android
+
+The app ships to Google Play as a Trusted Web Activity built with Bubblewrap. **[SETUP-ANDROID.md](SETUP-ANDROID.md)**
+is the step-by-step guide. The web side of that lives in this repo:
+
+- `public/.well-known/assetlinks.json` — Digital Asset Links. Must list the SHA-256 fingerprint of
+  both the upload key and Google Play's app signing key, or the Android app shows an address bar.
+- `public/privacy/index.html` — the privacy policy Play requires, served at `/privacy`.
+- `netlify.toml` — serves `assetlinks.json` as JSON and keeps `/privacy` out of the SPA rewrite.
+- `store-assets/android/` — the Play listing icon and feature graphic (not deployed).
+
+Signing keys are never committed; `.gitignore` blocks them.
 
 ## Layout
 

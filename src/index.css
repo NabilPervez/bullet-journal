@@ -1572,3 +1572,8 @@ body.is-dragging {
   width: 100%;
   margin: 0 auto;
 }
+
+/* A link styled as a button shouldn't carry a link's underline. */
+a.btn {
+  text-decoration: none;
+}

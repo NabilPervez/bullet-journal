@@ -5,3 +5,21 @@ dist-ssr/
 .env
 .env.*
 .DS_Store
+
+# Icon generator font downloads
+scripts/.font-cache/
+
+# ---------------------------------------------------------------------------
+# Android / Bubblewrap. NEVER commit a signing keystore or its passwords:
+# anyone holding them can publish updates as you. Keep them in a password
+# manager and an offline backup instead.
+# ---------------------------------------------------------------------------
+*.keystore
+*.jks
+keystore.properties
+android/app-release-*.apk
+android/app-release-*.aab
+android/*.idsig
+android/build/
+android/app/build/
+android/.gradle/

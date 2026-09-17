@@ -82,3 +82,23 @@ describe("v0 → v1", () => {
     expect(result.entries).toBe(state.entries);
   });
 });
+
+describe("v1 → v2", () => {
+  it("gives every entry an explicit repeat rule and spawn pointer", () => {
+    const { entries, version } = migrate({ entries: [{ id: "a", text: "x", type: "task", createdAt: 5 }], blocks: [] }, 1);
+    expect(version).toBe(2);
+    expect(entries[0]).toMatchObject({ repeat: null, spawnedId: null });
+  });
+
+  it("keeps a valid rule and drops a malformed one", () => {
+    const { entries } = migrate({
+      entries: [
+        { id: "a", text: "Oil change", type: "task", createdAt: 5, repeat: { every: 6, unit: "month" } },
+        { id: "b", text: "Broken", type: "task", createdAt: 5, repeat: { every: -1, unit: "eon" } },
+      ],
+      blocks: [],
+    }, 1);
+    expect(entries[0].repeat).toEqual({ every: 6, unit: "month" });
+    expect(entries[1].repeat).toBeNull();
+  });
+});

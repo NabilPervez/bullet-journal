@@ -4,7 +4,8 @@ import { migrate, SCHEMA_VERSION } from "./lib/migrations";
 import { initialState, journalReducer } from "./lib/journalReducer";
 import { uid } from "./lib/model";
 import { SLOT_MINUTES } from "./lib/constants";
-import { monthOffsetFromKey } from "./lib/dates";
+import { monthOffsetFromKey, toISODate } from "./lib/dates";
+import { anchorRepeat } from "./lib/recurrence";
 import { Nav } from "./components/Nav";
 import { Header } from "./components/Header";
 import { UndoToast } from "./components/UndoToast";
@@ -100,6 +101,8 @@ export default function App() {
       eventDate: meta.eventDate || null,
       eventTime: meta.eventTime || null,
       eventLocation: meta.eventLocation || null,
+      repeat: meta.repeat ? anchorRepeat(meta.repeat, meta.dueDate || meta.eventDate) : null,
+      spawnedId: null,
     };
     dispatch({ type: "add-entry", entry, blockId: uid() });
     return entry;
@@ -110,7 +113,15 @@ export default function App() {
   }, []);
 
   const toggleEntryDone = useCallback((entry) => {
-    dispatch({ type: "toggle-done", id: entry.id });
+    // Ids, today and now come in with the action so the reducer stays pure.
+    dispatch({
+      type: "toggle-done",
+      id: entry.id,
+      today: toISODate(new Date()),
+      now: Date.now(),
+      nextId: uid(),
+      nextBlockId: uid(),
+    });
   }, []);
 
   const deleteEntry = useCallback((entry) => {

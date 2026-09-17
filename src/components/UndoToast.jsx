@@ -14,7 +14,9 @@ export function UndoToast({ undo, onUndo, onDismiss }) {
 
   return (
     <div role="status" aria-live="polite" className="toast" key={undo.at}>
-      <span className="grow" style={{ fontSize: "var(--fs-meta)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      {/* Wraps rather than truncates: "next one is due Mar 17" is the part
+          worth reading. */}
+      <span className="grow" style={{ fontSize: "var(--fs-meta)", lineHeight: 1.35, overflowWrap: "anywhere" }}>
         {undo.label}
       </span>
       <button className="btn btn-primary" onClick={onUndo}>Undo</button>

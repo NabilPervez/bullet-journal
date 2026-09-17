@@ -3,6 +3,8 @@ import { useSwipeActions } from "../hooks/useSwipeActions";
 import { SWIPE_THRESHOLD_PX } from "../lib/gestures";
 import { ENTRY_TYPES, SIGNIFIERS, isSchedulable } from "../lib/model";
 import { formatDateShort, formatTimeShort } from "../lib/dates";
+import { anchorRepeat, describeRepeat } from "../lib/recurrence";
+import { RepeatPicker } from "./RepeatPicker";
 
 export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStartDrag, onSchedule, showType = true }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -43,6 +45,9 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
       eventDate: entry.type === "event" ? draft.eventDate || null : entry.eventDate,
       eventTime: entry.type === "event" ? draft.eventTime || null : entry.eventTime,
       eventLocation: entry.type === "event" ? draft.eventLocation || null : entry.eventLocation,
+      repeat: draft.repeat
+        ? anchorRepeat(draft.repeat, entry.type === "event" ? draft.eventDate : draft.dueDate)
+        : null,
     });
     setIsEditing(false);
   }
@@ -101,6 +106,14 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
                   onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))} />
               </div>
             )
+          )}
+
+          {entry.type !== "note" && (
+            <RepeatPicker
+              value={draft.repeat}
+              onChange={(repeat) => setDraft((d) => ({ ...d, repeat }))}
+              idPrefix={`edit-${entry.id}`}
+            />
           )}
 
           <div className="row gap-2 wrap">
@@ -208,6 +221,11 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
             {tickets.map((t) => (
               <span key={t} className="ticket">{t}</span>
             ))}
+            {entry.repeat && (
+              <span className="ticket" style={{ color: "var(--accent-ink)" }} title="Repeats">
+                ↻ {describeRepeat(entry.repeat)}
+              </span>
+            )}
             {entry.scheduledBlockId && (
               <span className="ticket" style={{ color: "var(--accent-ink)" }} title="On the schedule">▸ Scheduled</span>
             )}
@@ -255,5 +273,6 @@ function toDraft(entry) {
     eventDate: entry.eventDate || "",
     eventTime: entry.eventTime || "",
     eventLocation: entry.eventLocation || "",
+    repeat: entry.repeat || null,
   };
 }

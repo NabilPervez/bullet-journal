@@ -772,10 +772,15 @@ input[type="time"] {
 
 /* ---------- Undo toast ---------- */
 
+/* Centred with auto margins, not translateX(-50%): the entrance animation
+   animates transform, and while it ran the toast sat half its own width to
+   the right, pushing Undo off the screen. */
 .toast {
   position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: max-content;
   bottom: calc(var(--nav-height) + var(--safe-bottom) + 86px);
   z-index: 40;
   display: flex;
@@ -783,7 +788,7 @@ input[type="time"] {
   gap: var(--s3);
   max-width: calc(100vw - 2 * var(--s4));
   padding: var(--s2) var(--s2) var(--s2) var(--s4);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-lg);
   background: var(--surface-3);
   color: var(--text);
   box-shadow: var(--shadow-2);

@@ -1,7 +1,8 @@
 import { toISODate } from "./dates";
 import { ENTRY_TYPES, dateFieldFor } from "./model";
+import { normalizeRepeat } from "./recurrence";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 // Every entry carries the same keys whatever its type, so a consumer can read
 // entry.dueDate without first knowing what it is looking at.
@@ -17,6 +18,10 @@ const ENTRY_SHAPE = {
   eventDate: null,
   eventTime: null,
   eventLocation: null,
+  // A repeat rule, and — once a repeating entry is ticked off — the id of the
+  // next occurrence it wrote, so unticking can take that back.
+  repeat: null,
+  spawnedId: null,
 };
 
 function noonOf(iso) {
@@ -85,7 +90,23 @@ function toV1(state) {
   return { entries, blocks };
 }
 
-const MIGRATIONS = [{ to: 1, run: toV1 }];
+// v1 → v2: recurring entries. Existing entries get an explicit empty rule;
+// anything malformed is dropped rather than half-applied.
+function toV2(state) {
+  return {
+    entries: state.entries.map((e) => ({
+      ...e,
+      repeat: normalizeRepeat(e.repeat),
+      spawnedId: e.spawnedId ?? null,
+    })),
+    blocks: state.blocks,
+  };
+}
+
+const MIGRATIONS = [
+  { to: 1, run: toV1 },
+  { to: 2, run: toV2 },
+];
 
 export function migrate(state, fromVersion = 0) {
   let current = { entries: state.entries ?? [], blocks: state.blocks ?? [] };

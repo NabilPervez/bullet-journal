@@ -1,5 +1,7 @@
 import { DEFAULT_EVENT_DURATION, SLOT_MINUTES } from "./constants";
-import { hhmmToStartMinute, startMinuteToHHMM } from "./dates";
+import { formatDateShort, hhmmToStartMinute, startMinuteToHHMM } from "./dates";
+import { dateFieldFor } from "./model";
+import { nextOccurrence } from "./recurrence";
 
 // One reducer owns the journal. Every action addresses entities by id and
 // derives the next state from the previous one, so two actions dispatched in
@@ -105,11 +107,60 @@ export function journalReducer(state, action) {
     case "toggle-done": {
       const entry = state.entries.find((e) => e.id === action.id);
       if (!entry) return state;
-      return {
-        ...state,
-        entries: replaceEntry(state.entries, action.id, (e) => ({ ...e, done: !e.done })),
-        undo: entry.done ? state.undo : snapshot(state, `Completed "${entry.text}"`),
-      };
+
+      // Reopening. If ticking this off wrote the next occurrence, take that
+      // back too — unless it has been ticked off or edited into its own thing.
+      if (entry.done) {
+        const child = entry.spawnedId ? state.entries.find((e) => e.id === entry.spawnedId) : null;
+        const removeChild = child && !child.done && !child.spawnedId;
+        const entries = state.entries
+          .filter((e) => !(removeChild && e.id === child.id))
+          .map((e) => (e.id === entry.id ? { ...e, done: false, spawnedId: removeChild ? null : e.spawnedId } : e));
+        const blocks = removeChild ? state.blocks.filter((b) => b.entryId !== child.id) : state.blocks;
+        return { ...state, entries, blocks };
+      }
+
+      let entries = replaceEntry(state.entries, entry.id, (e) => ({ ...e, done: true }));
+      let blocks = state.blocks;
+      let label = `Completed "${entry.text}"`;
+
+      // Completing a repeating entry writes the next one, dated forward.
+      const nextDate = entry.spawnedId ? null : nextOccurrence(entry, action.today);
+      if (nextDate) {
+        const field = dateFieldFor(entry.type);
+        const child = {
+          ...entry,
+          id: action.nextId,
+          createdAt: action.now ?? entry.createdAt,
+          done: false,
+          spawnedId: null,
+          scheduledBlockId: null,
+          [field]: nextDate,
+        };
+
+        if (child.type === "event" && child.eventTime) {
+          const startMinute = hhmmToStartMinute(child.eventTime);
+          if (startMinute !== null) {
+            child.scheduledBlockId = action.nextBlockId;
+            const previous = state.blocks.find((b) => b.entryId === entry.id);
+            blocks = [
+              ...blocks,
+              {
+                id: action.nextBlockId,
+                entryId: child.id,
+                date: nextDate,
+                startMinute,
+                durationMinutes: previous?.durationMinutes ?? DEFAULT_EVENT_DURATION,
+              },
+            ];
+          }
+        }
+
+        entries = [child, ...entries.map((e) => (e.id === entry.id ? { ...e, spawnedId: child.id } : e))];
+        label = `Done — next "${entry.text}" is due ${formatDateShort(nextDate)}`;
+      }
+
+      return { ...state, entries, blocks, undo: snapshot(state, label) };
     }
 
     case "delete-entry": {

@@ -31,6 +31,9 @@ block, a schedule that moves with you, and a journal you can export and carry.
 | ★ | Priority — worth doing first |
 | ! | Inspiration — an idea worth keeping |
 
+**Repeating entries.** Any goal, task or event can repeat — weekly, monthly, every 6 months, yearly,
+or a custom "every N days/weeks/months/years". A repeating entry is marked **↻** with its rule.
+
 Each kind owns a colour, and it is the same colour everywhere: the stripe on the entry, the chip in
 the composer, the block on the schedule.
 
@@ -48,6 +51,13 @@ right place in every view.
 Scheduling an entry creates a block — a date, a start time and a length — and links the two. Move or
 resize the block and an event's own time follows it. Take it off the calendar and the entry stays in
 your log, just unscheduled.
+
+A repeating entry is only ever one line at a time. Tick it off and the next one is written for you,
+dated forward from when the finished one was *due* — not from when you ticked it — so the cadence
+holds: a monthly bill due on the 1st stays on the 1st even if you pay it early or late. If you're
+behind, it skips ahead to the first date after today rather than filling your log with overdue
+copies. A rule that starts on the 31st lands on the 31st whenever a month has one, and on the last
+day when it doesn't. Untick by mistake and the next occurrence is taken back.
 
 Everything saves itself as you go. If a save fails you'll see it in the header with a Retry; if the
 stored journal can't be read, the app shows what it could load and refuses to save over the rest
@@ -96,6 +106,11 @@ notation, and a way to replay the walkthrough.
 **Capture.** On a phone, tap the **+** button — it sits where your thumb already is. Pick a kind,
 write one line, log it. Dates and marks live behind *Add date or mark*, so the common case stays two
 taps. On a desktop the same composer sits at the top of the log.
+
+**Repeat.** Open *Add date, repeat or mark* and pick how often. Starting from a blank composer, the
+**Routines** row has ready-made ones — tap **↻ Oil change · every 6 months** straight after an oil
+change and the next one is logged, due six months from today. A repeating task with no due date
+starts today. You can change or remove a rule later from the entry's edit view.
 
 **Complete.** Tick the checkbox; untick it if you were wrong. On a phone you can also swipe a row
 right to complete and left to delete — a deletion always offers an undo for five seconds.
@@ -152,6 +167,7 @@ src/
     agenda.js          which part of the day to show
     gestures.js        swipe thresholds
     ordering.js        how today's log is sectioned, bundled and sorted
+    recurrence.js      repeat rules, interval maths, and the next occurrence
     journalReducer.js  every change to the journal, in one place
     migrations.js      schema version and upgrades
     storage.js         localStorage read/write
@@ -189,10 +205,10 @@ is darkened in the Day theme where the fill colour would be unreadable as type.
 
 ## Status
 
-Landed: repo cleanup, a module split, tests and CI; one reducer with a single writer, schema
+Landed: recurring entries; repo cleanup, a module split, tests and CI; one reducer with a single writer, schema
 migrations and undo; pointer-based scheduling with a keyboard route and export/import; a one-handed
 phone layout; a dark-first design system; and a first-run walkthrough.
 
 Still open: self-hosted fonts (an offline launch falls back to a system face), edge auto-scroll while
-dragging, a true Monday–Sunday week, the monthly migration ritual with `>` and `<`, collections,
-recurring entries and overlapping-block lanes.
+dragging, a true Monday–Sunday week, the monthly migration ritual with `>` and `<`, collections
+and overlapping-block lanes.

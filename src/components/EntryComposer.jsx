@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ENTRY_TYPES, SIGNIFIERS, isDatedType } from "../lib/model";
+import { addInterval, describeRepeat, ROUTINES } from "../lib/recurrence";
+import { toISODate } from "../lib/dates";
+import { RepeatPicker } from "./RepeatPicker";
 
 // The old composer crammed four type chips, three signifier chips and a
 // divider onto one shelf, then hid the date fields under it. Here each
@@ -13,6 +16,7 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
   const [eventLocation, setEventLocation] = useState("");
+  const [repeat, setRepeat] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const inputRef = useRef(null);
 
@@ -30,15 +34,20 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
     setEventDate("");
     setEventTime("");
     setEventLocation("");
+    setRepeat(null);
     setShowDetails(false);
   }
 
   async function submit(event) {
     event?.preventDefault();
     if (!canSubmit) return;
+    const today = toISODate(new Date());
+    const repeating = isDatedType(type) ? repeat : null;
+    const due = isDatedType(type) && type !== "event" ? dueDate || (repeating ? today : "") : "";
     await addEntry(text.trim(), type, {
       signifier: signifier === "none" ? null : signifier,
-      dueDate: isDatedType(type) && type !== "event" && dueDate ? dueDate : null,
+      repeat: repeating,
+      dueDate: due || null,
       eventDate: type === "event" ? eventDate : null,
       eventTime: type === "event" ? eventTime : null,
       eventLocation: type === "event" ? eventLocation : null,
@@ -48,6 +57,16 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
   }
 
   const detailsOpen = showDetails || needsDate;
+
+  // A routine fills the whole composer in one tap: tapping "Oil change" right
+  // after having one means the next is due six months from today.
+  function applyRoutine(routine) {
+    setType(routine.type);
+    setText(routine.text);
+    setRepeat(routine.repeat);
+    setDueDate(addInterval(toISODate(new Date()), routine.repeat));
+    setShowDetails(true);
+  }
 
   return (
     <form className={compact ? "stack gap-4" : "panel stack gap-4"} onSubmit={submit}>
@@ -97,6 +116,18 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
         />
       </div>
 
+      {!text && (
+        <div className="row gap-2 wrap">
+          <span className="meta">Routines</span>
+          {ROUTINES.map((routine) => (
+            <button key={routine.id} type="button" className="chip" onClick={() => applyRoutine(routine)}>
+              <span aria-hidden="true">↻</span>
+              {routine.text} · {describeRepeat(routine.repeat).toLowerCase()}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 3 — details, folded away until they're wanted */}
       {!needsDate && (
         <button
@@ -105,7 +136,7 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
           aria-expanded={detailsOpen}
           onClick={() => setShowDetails((open) => !open)}
         >
-          {detailsOpen ? "Hide details" : "Add date or mark"}
+          {detailsOpen ? "Hide details" : "Add date, repeat or mark"}
         </button>
       )}
 
@@ -161,6 +192,18 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
                 />
               </div>
             )
+          )}
+
+          {isDatedType(type) && (
+            <div className="stack gap-2">
+              <RepeatPicker value={repeat} onChange={setRepeat} idPrefix={idPrefix} />
+              {repeat && type !== "event" && !dueDate && (
+                <p className="meta">Starts today. Tick it off and the next one is written for you.</p>
+              )}
+              {repeat && (dueDate || type === "event") && (
+                <p className="meta">Tick it off and the next one is written for you.</p>
+              )}
+            </div>
           )}
 
           <fieldset className="stack gap-2" style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>

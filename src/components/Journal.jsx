@@ -23,7 +23,6 @@ export function Journal({
   const open = entries.filter((e) => !e.done && (e.type === "task" || e.type === "goal")).length;
 
   const rowProps = (entry) => ({
-    key: entry.id,
     entry,
     onToggle: () => toggleEntryDone(entry),
     onDelete: () => deleteEntry(entry),
@@ -105,7 +104,7 @@ function TypeGroup({ group, rowProps }) {
         aria-label={`${group.label} entries`}
       >
         {group.items.map((entry) => (
-          <EntryRow {...rowProps(entry)} />
+          <EntryRow key={entry.id} {...rowProps(entry)} />
         ))}
       </ul>
     </div>

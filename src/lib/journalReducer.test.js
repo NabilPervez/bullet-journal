@@ -138,3 +138,72 @@ describe("save status", () => {
     expect(journalReducer(failed, { type: "save-ok" }).saveError).toBeNull();
   });
 });
+
+describe("recurring entries", () => {
+  const today = "2026-09-17";
+  const complete = (state, id, extra = {}) =>
+    journalReducer(state, { type: "toggle-done", id, today, now: 5000, nextId: "next", nextBlockId: "next-block", ...extra });
+
+  it("writes the next oil change six months on when one is ticked off", () => {
+    const oil = entry({ id: "oil", text: "Oil change", dueDate: today, repeat: { every: 6, unit: "month" } });
+    const next = complete(ready({ entries: [oil] }), "oil");
+
+    const done = next.entries.find((e) => e.id === "oil");
+    const upcoming = next.entries.find((e) => e.id === "next");
+
+    expect(done).toMatchObject({ done: true, spawnedId: "next" });
+    expect(upcoming).toMatchObject({ text: "Oil change", done: false, dueDate: "2027-03-17", repeat: { every: 6, unit: "month" } });
+    expect(next.undo.label).toContain("Mar 17");
+  });
+
+  it("does not write a second copy if the same entry is ticked again", () => {
+    const oil = entry({ id: "oil", dueDate: today, repeat: { every: 6, unit: "month" } });
+    let state = complete(ready({ entries: [oil] }), "oil");
+    state = journalReducer(state, { type: "toggle-done", id: "oil", today });
+    state = complete(state, "oil", { nextId: "next-2" });
+    expect(state.entries.filter((e) => e.text === oil.text)).toHaveLength(2);
+  });
+
+  it("takes the next occurrence back when the tick is undone", () => {
+    const oil = entry({ id: "oil", dueDate: today, repeat: { every: 6, unit: "month" } });
+    let state = complete(ready({ entries: [oil] }), "oil");
+    state = journalReducer(state, { type: "toggle-done", id: "oil", today });
+
+    expect(state.entries.map((e) => e.id)).toEqual(["oil"]);
+    expect(state.entries[0]).toMatchObject({ done: false, spawnedId: null });
+  });
+
+  it("leaves the next occurrence alone once it has been ticked off itself", () => {
+    const weekly = entry({ id: "w", dueDate: today, repeat: { every: 1, unit: "week" } });
+    let state = complete(ready({ entries: [weekly] }), "w");
+    state = complete(state, "next", { nextId: "after" });
+    state = journalReducer(state, { type: "toggle-done", id: "w", today });
+    expect(state.entries.some((e) => e.id === "next")).toBe(true);
+  });
+
+  it("carries a repeating event's time and block length onto the next one", () => {
+    const standup = entry({
+      id: "s",
+      type: "event",
+      eventDate: "2026-09-14",
+      eventTime: "09:30",
+      scheduledBlockId: "b1",
+      repeat: { every: 1, unit: "week" },
+    });
+    const state = ready({
+      entries: [standup],
+      blocks: [{ id: "b1", entryId: "s", date: "2026-09-14", startMinute: 210, durationMinutes: 45 }],
+    });
+    const next = complete(state, "s");
+
+    expect(next.entries.find((e) => e.id === "next")).toMatchObject({ eventDate: "2026-09-21", eventTime: "09:30", scheduledBlockId: "next-block" });
+    expect(next.blocks.find((b) => b.id === "next-block")).toMatchObject({ date: "2026-09-21", startMinute: 210, durationMinutes: 45 });
+  });
+
+  it("completes a non-repeating entry exactly as before", () => {
+    const one = entry({ id: "one", dueDate: today });
+    const next = complete(ready({ entries: [one] }), "one");
+    expect(next.entries).toHaveLength(1);
+    expect(next.entries[0].done).toBe(true);
+  });
+});

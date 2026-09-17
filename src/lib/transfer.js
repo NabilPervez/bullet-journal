@@ -1,5 +1,6 @@
 import { entryRelevantDate, ENTRY_TYPES, SIGNIFIERS } from "./model";
 import { formatTimeShort, monthLabelFromKey } from "./dates";
+import { describeRepeat } from "./recurrence";
 
 export const EXPORT_FORMAT = "marginalia-journal";
 
@@ -62,6 +63,7 @@ function lineFor(entry) {
   if (entry.type === "event" && entry.eventTime) trailing.push(formatTimeShort(entry.eventTime));
   if (entry.eventLocation) trailing.push(entry.eventLocation);
   if (entry.type !== "event" && entry.dueDate) trailing.push(`due ${entry.dueDate}`);
+  if (entry.repeat) trailing.push(`↻ ${describeRepeat(entry.repeat).toLowerCase()}`);
 
   return trailing.length ? `${bits.join(" ")} — ${trailing.join(", ")}` : bits.join(" ");
 }

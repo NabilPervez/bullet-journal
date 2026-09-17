@@ -2,6 +2,51 @@
   publish = "dist"
   command = "npm run build"
 
+# ---------------------------------------------------------------------------
+# Android (Trusted Web Activity)
+#
+# Google's verifier fetches /.well-known/assetlinks.json and requires JSON.
+# Before this file existed, the SPA rewrite below answered that URL with
+# index.html as text/html, which fails verification and makes the Android app
+# show a browser address bar.
+# ---------------------------------------------------------------------------
+
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "public, max-age=300"
+
+# Netlify was serving the manifest as application/octet-stream.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+# The service worker must never be cached, or an update can't reach
+# installed copies of the app.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# ---------------------------------------------------------------------------
+# Routing. Rules are matched top to bottom; the first match wins.
+# ---------------------------------------------------------------------------
+
+# /.well-known/assetlinks.json needs no rule: Netlify serves a file that
+# exists before applying any non-forced rewrite, so the catch-all below can't
+# shadow it once public/.well-known/assetlinks.json is deployed.
+# `npm run twa:check` confirms that against the live site.
+
+# The privacy policy is a static page, not part of the app.
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy/index.html"
+  status = 200
+
+# Everything else is the single-page app.
 [[redirects]]
   from = "/*"
   to = "/index.html"

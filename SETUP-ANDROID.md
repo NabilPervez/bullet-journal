@@ -207,8 +207,12 @@ Copy the value on the line starting `SHA256:`.
 
 ### D3. Paste it into the repo
 
-Open `public/.well-known/assetlinks.json` in the repo and replace the text
-`REPLACE_WITH_UPLOAD_KEY_SHA256` with your fingerprint, keeping the quotes:
+**Already done for this app** — the upload key fingerprint is in the file:
+`13:36:F9:28:F5:E0:8C:50:8B:9A:18:DA:0E:1F:E0:06:F9:A9:92:9A:2E:F3:F0:65:CD:BD:E2:79:2A:58:DA:71`
+
+For future reference, you'd open `public/.well-known/assetlinks.json` and add the fingerprint to the
+list, keeping the quotes. Never leave a placeholder string in the list: Google rejects the whole file
+if any entry isn't a real fingerprint, which breaks verification even for the valid ones.
 
 ```json
 "sha256_cert_fingerprints": [
@@ -346,8 +350,16 @@ too.
 
 1. **Test and release → Setup → App signing** (sometimes shown under **App integrity**).
 2. Under **App signing key certificate**, copy the **SHA-256 certificate fingerprint**.
-3. In the repo, open `public/.well-known/assetlinks.json` and replace
-   `REPLACE_WITH_PLAY_APP_SIGNING_KEY_SHA256` with that value, keeping the quotes.
+3. In the repo, open `public/.well-known/assetlinks.json` and **add** that value to
+   `sha256_cert_fingerprints` as a second entry, after the upload key one. Remember the comma between
+   them:
+
+   ```json
+   "sha256_cert_fingerprints": [
+     "13:36:F9:28:F5:E0:8C:50:8B:9A:18:DA:0E:1F:E0:06:F9:A9:92:9A:2E:F3:F0:65:CD:BD:E2:79:2A:58:DA:71",
+     "<paste the Play app signing key SHA-256 here>"
+   ]
+   ```
 4. Commit, push to `main`, wait for the deploy, then run:
 
    ```bash

@@ -61,9 +61,8 @@ You only rebuild and re-upload to Play when the app's name, icon, colours or And
 
 ## Part A — Get the website ready (15 minutes)
 
-1. **Put your contact email in the privacy policy.** Open `public/privacy/index.html`, search for
-   `REPLACE_WITH_CONTACT_EMAIL` (it appears twice on one line) and replace both with the email address
-   you want Play users to contact. This address will be public.
+1. ~~Put your contact email in the privacy policy.~~ Done — the policy lists
+   NABILPERVEZCONSULTING@GMAIL.COM.
 2. **Merge this branch** (`android-twa`) into `main` on GitHub. Netlify deploys `main` automatically.
 3. Wait for the deploy to finish (about a minute), then run:
 

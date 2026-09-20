@@ -31,8 +31,8 @@ You only rebuild and re-upload to Play when the app's name, icon, colours or And
       icons for Today, Week, Month and Future.
 - [x] The service worker precaches the app, falls back to it offline, and now also caches the fonts so
       the app looks right offline.
-- [x] `public/.well-known/assetlinks.json` exists, with placeholders for the fingerprints you'll paste
-      in later.
+- [x] `public/.well-known/assetlinks.json` exists, carrying both real fingerprints: the upload key and
+      the Play app signing key.
 - [x] `netlify.toml` serves that file as `application/json`. Before this change the site answered that
       URL with the app's HTML page, which would have made the Android app show an address bar.
 - [x] A privacy policy at `/privacy`, linked from Settings, which Play requires.
@@ -348,45 +348,31 @@ Play re-signs your app with its own key before delivering it to phones. The app 
 Play is therefore signed with **Google's key, not yours**, and the website has to vouch for that key
 too.
 
-1. **Test and release → Setup → App signing** (sometimes shown under **App integrity**).
-2. Under **App signing key certificate**, copy the **SHA-256 certificate fingerprint**.
-3. In the repo, open `public/.well-known/assetlinks.json` and **add** that value to
-   `sha256_cert_fingerprints` as a second entry, after the upload key one. Remember the comma between
-   them:
-
-   ```json
-   "sha256_cert_fingerprints": [
-     "13:36:F9:28:F5:E0:8C:50:8B:9A:18:DA:0E:1F:E0:06:F9:A9:92:9A:2E:F3:F0:65:CD:BD:E2:79:2A:58:DA:71",
-     "<paste the Play app signing key SHA-256 here>"
-   ]
-   ```
-4. Commit, push to `main`, wait for the deploy, then run:
-
-   ```bash
-   npm run twa:check
-   ```
-
-   This time it should say **✓ Ready**.
-5. On your phone, uninstall the app, wait a couple of minutes, and reinstall from the internal testing
-   link. No address bar = done.
-
-Your final file will look like this, with both of your real fingerprints:
+**Done for this app.** Both fingerprints are in `public/.well-known/assetlinks.json`:
 
 ```json
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.nabilpervezconsulting.bulletjournal",
-      "sha256_cert_fingerprints": [
-        "<upload key SHA-256 from Part D>",
-        "<app signing key SHA-256 from Play Console>"
-      ]
-    }
-  }
+"sha256_cert_fingerprints": [
+  "13:36:F9:28:F5:E0:8C:50:8B:9A:18:DA:0E:1F:E0:06:F9:A9:92:9A:2E:F3:F0:65:CD:BD:E2:79:2A:58:DA:71",
+  "38:47:96:7A:B7:60:D5:9B:3B:FC:02:5F:12:CF:30:6F:C6:4E:DA:84:02:F1:86:3F:95:09:FD:6D:10:80:D2:EB"
 ]
 ```
+
+The first is the upload key from Part D. The second is the Play app signing key, copied from **Test
+and release → Setup → App signing → App signing key certificate**.
+
+> Play Console lists two SHA-256 values for the app signing key: **classic** and **post-quantum**.
+> Digital Asset Links uses the classic one, which is what's above. Adding the post-quantum value
+> would make Google reject the whole file.
+
+Because this file is served by the website rather than bundled into the app, **no new build or Play
+upload is needed** — a Netlify deploy is enough.
+
+After the deploy, verify and reinstall:
+
+1. Run `npm run twa:check`. It should say **✓ Ready**.
+2. On the phone, the quickest reliable reset is **Settings → Apps → Marginalia → Storage → Clear
+   storage**, then reopen the app. Chrome caches the verification result per install, so it won't
+   re-check on its own. Uninstalling and reinstalling from the testing link also works.
 
 ### F6. Go to production
 

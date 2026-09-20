@@ -52,12 +52,18 @@ Scheduling an entry creates a block — a date, a start time and a length — an
 resize the block and an event's own time follows it. Take it off the calendar and the entry stays in
 your log, just unscheduled.
 
-A repeating entry is only ever one line at a time. Tick it off and the next one is written for you,
+A repeating entry is only ever one real line at a time. Tick it off and the next one is written for you,
 dated forward from when the finished one was *due* — not from when you ticked it — so the cadence
 holds: a monthly bill due on the 1st stays on the 1st even if you pay it early or late. If you're
 behind, it skips ahead to the first date after today rather than filling your log with overdue
 copies. A rule that starts on the 31st lands on the 31st whenever a month has one, and on the last
 day when it doesn't. Untick by mistake and the next occurrence is taken back.
+
+The calendar views — Month, Week and Ahead — additionally *preview* where a repeating entry will
+land, so a six-month cadence is visible as marks across the year rather than a single line that
+hops forward. Those previews are drawn as outlined "Upcoming" rows: they're computed from the rule
+each time the view renders, never stored, and can't be ticked or edited. Only the live occurrence is
+a real journal line.
 
 Everything saves itself as you go. If a save fails you'll see it in the header with a Retry; if the
 stored journal can't be read, the app shows what it could load and refuses to save over the rest
@@ -182,6 +188,7 @@ src/
     agenda.js          which part of the day to show
     gestures.js        swipe thresholds
     ordering.js        how today's log is sectioned, bundled and sorted
+    projection.js      previews of where repeating entries will land
     recurrence.js      repeat rules, interval maths, and the next occurrence
     journalReducer.js  every change to the journal, in one place
     migrations.js      schema version and upgrades

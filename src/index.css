@@ -1577,3 +1577,32 @@ body.is-dragging {
 a.btn {
   text-decoration: none;
 }
+
+/* ---------- Projected (upcoming) occurrences ----------
+   A repeating entry's future dates are previews, not journal lines: outlined
+   instead of filled, dimmed, and with nothing to tick. */
+
+.entry-body-ghost {
+  background: transparent;
+  border-style: dashed;
+  opacity: 0.75;
+}
+
+.entry-body-ghost:hover {
+  opacity: 1;
+}
+
+.check-box-ghost {
+  border-style: dashed;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.entry-text-ghost {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.entry-text-ghost::after {
+  content: none;
+}

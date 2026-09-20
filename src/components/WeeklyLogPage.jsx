@@ -3,6 +3,8 @@ import { toISODate } from "../lib/dates";
 import { ENTRY_TYPES } from "../lib/model";
 import { bySoonest } from "../lib/ordering";
 import { EntryRow } from "./EntryRow";
+import { ProjectedRow } from "./ProjectedRow";
+import { projectionsBetween } from "../lib/projection";
 
 const DAYS_SHOWN = 7;
 
@@ -24,13 +26,17 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
     });
   }, [weekOffset]);
 
+  // Upcoming occurrences of repeating entries, across the seven days shown.
+  const projections = useMemo(
+    () => projectionsBetween(entries, toISODate(days[0]), toISODate(days[days.length - 1])),
+    [entries, days]
+  );
+
   function dayItems(date) {
     const iso = toISODate(date);
-    return entries
-      .filter(
-        (e) => (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso)
-      )
-      .sort(bySoonest);
+    const on = (e) =>
+      (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso);
+    return [...entries.filter(on), ...projections.filter(on)].sort(bySoonest);
   }
 
   async function submitDay(date) {
@@ -144,16 +150,20 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
                   <p className="meta" style={{ padding: "var(--s1) 0" }}>Nothing yet</p>
                 ) : (
                   <ul className="stack gap-2" style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                    {items.map((entry) => (
-                      <EntryRow
-                        key={entry.id}
-                        entry={entry}
-                        onToggle={() => toggleEntryDone(entry)}
-                        onDelete={() => deleteEntry(entry)}
-                        onSave={(patch) => updateEntry(entry, patch)}
-                        onSchedule={onSchedule}
-                      />
-                    ))}
+                    {items.map((entry) =>
+                      entry.projected ? (
+                        <ProjectedRow key={entry.id} entry={entry} />
+                      ) : (
+                        <EntryRow
+                          key={entry.id}
+                          entry={entry}
+                          onToggle={() => toggleEntryDone(entry)}
+                          onDelete={() => deleteEntry(entry)}
+                          onSave={(patch) => updateEntry(entry, patch)}
+                          onSchedule={onSchedule}
+                        />
+                      )
+                    )}
                   </ul>
                 )}
               </div>

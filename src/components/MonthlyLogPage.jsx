@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { daysInMonthCount, formatDateShort, formatTimeShort, getMonthInfo, isoFor } from "../lib/dates";
 import { ENTRY_TYPES } from "../lib/model";
+import { projectionsBetween } from "../lib/projection";
+import { describeRepeat } from "../lib/recurrence";
 
 export function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, monthOffset, setMonthOffset }) {
   const info = getMonthInfo(monthOffset);
@@ -13,11 +15,18 @@ export function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry
   const [dayDraft, setDayDraft] = useState({ text: "", type: "event", time: "" });
   const [dumpText, setDumpText] = useState("");
 
+  // Where repeating entries will land this month, shown alongside the real
+  // ones so a monthly cadence is visible before it happens.
+  const projections = useMemo(
+    () => projectionsBetween(entries, isoFor(info.year, info.monthIndex, 1), isoFor(info.year, info.monthIndex, numDays)),
+    [entries, info.year, info.monthIndex, numDays]
+  );
+
   function dayItems(day) {
     const iso = isoFor(info.year, info.monthIndex, day);
-    return entries.filter(
-      (e) => (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso)
-    );
+    const on = (e) =>
+      (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso);
+    return [...entries.filter(on), ...projections.filter(on)];
   }
 
   const brainDump = entries.filter(
@@ -75,11 +84,14 @@ export function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry
                       <span className="meta" style={{ opacity: 0.5 }}>—</span>
                     ) : (
                       items.map((e) => (
-                        <div key={e.id} className="row gap-2" style={{ alignItems: "baseline" }}>
+                        <div key={e.id} className="row gap-2" style={{ alignItems: "baseline", opacity: e.projected ? 0.65 : 1 }}>
                           <span className="sticker sticker-sm sticker-static" data-type={e.type} aria-hidden="true">
                             {ENTRY_TYPES[e.type].glyph}
                           </span>
                           <span className="grow" style={{ fontSize: "var(--fs-body)", overflowWrap: "anywhere" }}>{e.text}</span>
+                          {e.projected && (
+                            <span className="ticket" style={{ color: "var(--accent-ink)" }} title={`Repeats ${describeRepeat(e.repeat).toLowerCase()}`}>↻</span>
+                          )}
                           {e.type === "event" && e.eventTime && <span className="ticket">{formatTimeShort(e.eventTime)}</span>}
                         </div>
                       ))

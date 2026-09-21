@@ -323,12 +323,17 @@ Write things down as one short line each. Every line is one of four kinds — a 
 • Today: what's due today first, then everything else in the order it's coming.
 • Schedule: give tasks a time on a half-hour agenda. Drag, stretch, move.
 • Week, month and the months ahead, all filed automatically.
-• Repeating entries: tick off an oil change and the next one is already waiting, six months on.
+• Repeating entries: set an oil change every six months and see every one on your calendar.
 • Bold, dark-first design with a light theme, made to be used one-handed.
-• Works offline.
 
 Private by design: no account, no ads, no tracking. Your journal stays on your device, and you can export a copy whenever you like.
 ```
+
+> ⚠️ **Don't claim "works offline" in the listing.** Play reviewers install the app and open it with
+> no connection. A TWA can only work offline after its first launch online, so a fresh offline
+> install shows Chrome's "You're offline" screen. An earlier draft of this description said "Works
+> offline." and was flagged under the **Misleading Claims** policy for exactly that reason. Only list
+> features a reviewer can see on a first, offline launch.
 
 ### F4. Upload a build to internal testing
 

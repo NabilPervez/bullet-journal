@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { formatDateShort, getMonthInfo } from "../lib/dates";
 import { ENTRY_TYPES, entryRelevantDate, isDatedType } from "../lib/model";
+import { projectionsBetween } from "../lib/projection";
+import { describeRepeat } from "../lib/recurrence";
+import { daysInMonthCount, isoFor } from "../lib/dates";
 
 // Rendered inside the Index page, under the "Ahead" tab.
 export function FutureLog({ entries, addEntry }) {
@@ -18,10 +21,23 @@ export function FutureLog({ entries, addEntry }) {
     setDate("");
   }
 
+  // Every repeating entry's future dates across the twelve months shown, so
+  // "every 6 months" is visible as two marks on the year rather than one.
+  const projections = useMemo(() => {
+    const first = months[0];
+    const last = months[months.length - 1];
+    return projectionsBetween(
+      entries,
+      isoFor(first.year, first.monthIndex, 1),
+      isoFor(last.year, last.monthIndex, daysInMonthCount(last.year, last.monthIndex))
+    );
+  }, [entries, months]);
+
   function itemsForMonth(key) {
-    return entries
-      .filter((e) => isDatedType(e.type) && entryRelevantDate(e).startsWith(key))
-      .sort((a, b) => entryRelevantDate(a).localeCompare(entryRelevantDate(b)));
+    const inMonth = (e) => isDatedType(e.type) && entryRelevantDate(e).startsWith(key);
+    return [...entries.filter(inMonth), ...projections.filter(inMonth)].sort((a, b) =>
+      entryRelevantDate(a).localeCompare(entryRelevantDate(b))
+    );
   }
 
   return (
@@ -84,13 +100,16 @@ export function FutureLog({ entries, addEntry }) {
               ) : (
                 <ul className="stack gap-2" style={{ listStyle: "none", margin: 0, padding: 0 }}>
                   {items.map((e) => (
-                    <li key={e.id} className="row gap-2" style={{ alignItems: "flex-start" }}>
+                    <li key={e.id} className="row gap-2" style={{ alignItems: "flex-start", opacity: e.projected ? 0.65 : 1 }}>
                       <span className="sticker sticker-sm sticker-static" data-type={e.type} aria-hidden="true">
                         {ENTRY_TYPES[e.type].glyph}
                       </span>
                       <span className="grow stack gap-1">
                         <span style={{ fontSize: "var(--fs-body)", overflowWrap: "anywhere" }}>{e.text}</span>
-                        <span className="meta">{formatDateShort(entryRelevantDate(e))}</span>
+                        <span className="meta">
+                          {formatDateShort(entryRelevantDate(e))}
+                          {e.projected ? ` · ↻ ${describeRepeat(e.repeat).toLowerCase()}` : ""}
+                        </span>
                       </span>
                     </li>
                   ))}

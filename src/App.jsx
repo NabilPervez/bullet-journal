@@ -44,8 +44,11 @@ export default function App() {
   const { theme, setTheme, toggle: toggleTheme } = useTheme();
   const { showTour, finish: finishTour, replay: replayTour } = useOnboarding();
   // Re-renders every view when the date changes under an open app.
-  useToday();
+  const today = useToday();
   const [backup, setBackup] = useState(readBackupState);
+  // Midday of today, not Date.now(): a reminder counted in days doesn't need
+  // the clock, and render stays pure.
+  const backupDue = needsBackup({ entryCount: entries.length, ...backup, now: new Date(`${today}T12:00`).getTime() });
 
   // Load once, run any pending schema migration, then hand the result to the
   // reducer. Nothing else reads or writes storage.
@@ -213,7 +216,7 @@ export default function App() {
           saveError={saveError}
           readonly={status === "readonly"}
           onRetrySave={retrySave}
-          backupDue={needsBackup({ entryCount: entries.length, ...backup, now: Date.now() })}
+          backupDue={backupDue}
           onExport={() => setView("settings")}
           onSnoozeBackup={handleSnoozeBackup}
           theme={theme}

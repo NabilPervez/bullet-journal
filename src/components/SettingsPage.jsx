@@ -1,7 +1,7 @@
 import { JournalData } from "./JournalData";
 import { ENTRY_TYPES, SIGNIFIERS } from "../lib/model";
 
-export function SettingsPage({ entries, blocks, version, onImport, theme, onSetTheme, onReplayTour }) {
+export function SettingsPage({ entries, blocks, version, onImport, onExported, theme, onSetTheme, onReplayTour }) {
   return (
     <section aria-label="Settings" className="stack gap-5 page-turn" style={{ maxWidth: 680 }}>
       <div className="stack gap-1">
@@ -31,7 +31,7 @@ export function SettingsPage({ entries, blocks, version, onImport, theme, onSetT
 
       {/* Moved here from the Index, where it sat under the months and had
           nothing to do with finding an entry. */}
-      <JournalData entries={entries} blocks={blocks} version={version} onImport={onImport} />
+      <JournalData entries={entries} blocks={blocks} version={version} onImport={onImport} onExported={onExported} />
 
       <div className="panel stack gap-3">
         <h3 style={{ fontSize: "var(--fs-title)" }}>The notation</h3>

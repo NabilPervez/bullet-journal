@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { loadJournal, saveJournal } from "./lib/storage";
+import { isJournalKey, loadJournal, saveJournal } from "./lib/storage";
+import { markExported, needsBackup, readBackupState, snoozeBackup } from "./lib/backup";
 import { migrate, SCHEMA_VERSION } from "./lib/migrations";
 import { initialState, journalReducer } from "./lib/journalReducer";
 import { uid } from "./lib/model";
@@ -19,6 +20,7 @@ import { Onboarding } from "./components/Onboarding";
 import { useIsCompact } from "./hooks/useViewport";
 import { useTheme } from "./hooks/useTheme";
 import { useOnboarding } from "./hooks/useOnboarding";
+import { useToday } from "./hooks/useToday";
 
 const VIEWS = ["index", "monthly", "weekly", "daily", "settings"];
 const SAVE_DEBOUNCE_MS = 200;
@@ -41,10 +43,13 @@ export default function App() {
   const compact = useIsCompact();
   const { theme, setTheme, toggle: toggleTheme } = useTheme();
   const { showTour, finish: finishTour, replay: replayTour } = useOnboarding();
+  // Re-renders every view when the date changes under an open app.
+  useToday();
+  const [backup, setBackup] = useState(readBackupState);
 
   // Load once, run any pending schema migration, then hand the result to the
   // reducer. Nothing else reads or writes storage.
-  useEffect(() => {
+  const hydrateFromStorage = useCallback(() => {
     const stored = loadJournal();
     const migrated = migrate(stored, stored.version);
     dispatch({
@@ -58,6 +63,20 @@ export default function App() {
       console.warn("Marginalia: stored data could not be read; running read-only", stored.damaged);
     }
   }, []);
+
+  useEffect(() => {
+    hydrateFromStorage();
+  }, [hydrateFromStorage]);
+
+  // Another tab or the installed app saved. Take its journal rather than
+  // saving this tab's stale copy over the top of it on the next edit.
+  useEffect(() => {
+    function onStorage(event) {
+      if (event.storageArea === localStorage && isJournalKey(event.key)) hydrateFromStorage();
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [hydrateFromStorage]);
 
   // One writer. It watches the reduced state instead of being called from
   // eight different mutators, which is what made concurrent edits lose data.
@@ -157,6 +176,19 @@ export default function App() {
     });
   }, []);
 
+  const dismissUndo = useCallback(() => dispatch({ type: "dismiss-undo" }), []);
+  const undoLast = useCallback(() => dispatch({ type: "undo" }), []);
+
+  const handleExported = useCallback(() => {
+    markExported();
+    setBackup(readBackupState());
+  }, []);
+
+  const handleSnoozeBackup = useCallback(() => {
+    snoozeBackup();
+    setBackup(readBackupState());
+  }, []);
+
   function jumpToMonth(key) {
     setMonthOffset(monthOffsetFromKey(key));
     setView("monthly");
@@ -181,6 +213,9 @@ export default function App() {
           saveError={saveError}
           readonly={status === "readonly"}
           onRetrySave={retrySave}
+          backupDue={needsBackup({ entryCount: entries.length, ...backup, now: Date.now() })}
+          onExport={() => setView("settings")}
+          onSnoozeBackup={handleSnoozeBackup}
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenSettings={() => setView("settings")}
@@ -202,6 +237,7 @@ export default function App() {
               blocks={blocks}
               version={version || SCHEMA_VERSION}
               onImport={importJournal}
+              onExported={handleExported}
               theme={theme}
               onSetTheme={setTheme}
               onReplayTour={replayTour}
@@ -248,7 +284,7 @@ export default function App() {
         <CaptureButton onOpen={() => setCapturing(true)} />
       )}
       {capturing && <CaptureSheet addEntry={addEntry} onClose={() => setCapturing(false)} />}
-      <UndoToast undo={undo} onUndo={() => dispatch({ type: "undo" })} onDismiss={() => dispatch({ type: "dismiss-undo" })} />
+      <UndoToast undo={undo} onUndo={undoLast} onDismiss={dismissUndo} />
       {showTour && <Onboarding onDone={finishTour} />}
     </div>
   );

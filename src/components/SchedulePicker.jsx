@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SLOTS_PER_DAY, SLOT_MINUTES } from "../lib/constants";
 import { minutesToLabel, toISODate } from "../lib/dates";
+import { useToday } from "../hooks/useToday";
 
 // The keyboard and touch route onto the calendar. Dragging is one way to
 // schedule something; it can't be the only way.
 export function SchedulePicker({ entry, blocks, onPick, onClose }) {
   const [dayOffset, setDayOffset] = useState(0);
   const closeRef = useRef(null);
+  const today = useToday();
 
   const date = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + dayOffset);
-    return d;
-  }, [dayOffset]);
+    const [y, m, d] = today.split("-").map(Number);
+    return new Date(y, m - 1, d + dayOffset);
+  }, [dayOffset, today]);
 
   const dateStr = toISODate(date);
   const dayLabel = date.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });

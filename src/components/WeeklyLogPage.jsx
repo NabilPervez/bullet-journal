@@ -5,26 +5,27 @@ import { bySoonest } from "../lib/ordering";
 import { EntryRow } from "./EntryRow";
 import { ProjectedRow } from "./ProjectedRow";
 import { projectionsBetween } from "../lib/projection";
+import { useToday } from "../hooks/useToday";
 
 const DAYS_SHOWN = 7;
 
 export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry, updateEntry, onSchedule }) {
   const [weekOffset, setWeekOffset] = useState(0);
+  const today = useToday();
   const [openDay, setOpenDay] = useState(null);
   const [dayDraft, setDayDraft] = useState({ text: "", type: "task", time: "" });
 
   // Today, then the six days after it — not a calendar week. What matters is
   // what's coming, and the first row should be the day you're standing in.
   const days = useMemo(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() + weekOffset * DAYS_SHOWN);
+    const [y, m, d] = today.split("-").map(Number);
+    const start = new Date(y, m - 1, d + weekOffset * DAYS_SHOWN);
     return Array.from({ length: DAYS_SHOWN }, (_, i) => {
       const d = new Date(start);
       d.setDate(d.getDate() + i);
       return d;
     });
-  }, [weekOffset]);
+  }, [weekOffset, today]);
 
   // Upcoming occurrences of repeating entries, across the seven days shown.
   const projections = useMemo(

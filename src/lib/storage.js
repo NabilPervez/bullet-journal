@@ -3,18 +3,30 @@
 // to fall back to [] and the next save made that permanent.
 
 const PREFIX = "marginalia:";
-const ENTRIES_KEY = PREFIX + "entries";
-const BLOCKS_KEY = PREFIX + "blocks";
-const VERSION_KEY = PREFIX + "schemaVersion";
 
-function readList(key) {
-  let raw;
+// The whole journal lives under one key, so a save either lands or doesn't.
+// It used to be three keys written in turn, and a quota error between them
+// left entries and blocks out of step.
+export const JOURNAL_KEY = PREFIX + "journal";
+
+// Read-only now: journals saved before the single key still open.
+const LEGACY_ENTRIES_KEY = PREFIX + "entries";
+const LEGACY_BLOCKS_KEY = PREFIX + "blocks";
+const LEGACY_VERSION_KEY = PREFIX + "schemaVersion";
+
+function readRaw(key) {
   try {
-    raw = localStorage.getItem(key);
+    return { ok: true, raw: localStorage.getItem(key) };
   } catch (err) {
     // Private mode, disabled storage, or a locked profile.
-    return { ok: false, reason: "unavailable", error: err, value: [] };
+    return { ok: false, reason: "unavailable", error: err };
   }
+}
+
+function readList(key) {
+  const read = readRaw(key);
+  if (!read.ok) return { ...read, value: [] };
+  const { raw } = read;
   if (raw == null) return { ok: true, value: [] };
   try {
     const parsed = JSON.parse(raw);
@@ -35,29 +47,13 @@ function quarantine(key, raw) {
   }
 }
 
-export function loadJournal() {
-  const entries = readList(ENTRIES_KEY);
-  const blocks = readList(BLOCKS_KEY);
-
-  const damaged = [];
-  if (!entries.ok) damaged.push({ key: ENTRIES_KEY, ...entries });
-  if (!blocks.ok) damaged.push({ key: BLOCKS_KEY, ...blocks });
-
+function result(entries, blocks, version, damaged) {
   for (const d of damaged) {
     if (d.reason === "corrupt") quarantine(d.key, d.raw);
   }
-
-  let version = 0;
-  try {
-    const rawVersion = localStorage.getItem(VERSION_KEY);
-    if (rawVersion != null) version = Number(rawVersion) || 0;
-  } catch {
-    version = 0;
-  }
-
   return {
-    entries: entries.value,
-    blocks: blocks.value,
+    entries,
+    blocks,
     version,
     // "readonly" means: show what we have, but do not save over the top of it.
     readonly: damaged.length > 0,
@@ -65,16 +61,57 @@ export function loadJournal() {
   };
 }
 
-export function saveJournal({ entries, blocks, version }) {
+function loadLegacy() {
+  const entries = readList(LEGACY_ENTRIES_KEY);
+  const blocks = readList(LEGACY_BLOCKS_KEY);
+
+  const damaged = [];
+  if (!entries.ok) damaged.push({ key: LEGACY_ENTRIES_KEY, ...entries });
+  if (!blocks.ok) damaged.push({ key: LEGACY_BLOCKS_KEY, ...blocks });
+
+  const rawVersion = readRaw(LEGACY_VERSION_KEY);
+  const version = rawVersion.ok && rawVersion.raw != null ? Number(rawVersion.raw) || 0 : 0;
+
+  return result(entries.value, blocks.value, version, damaged);
+}
+
+export function loadJournal() {
+  const read = readRaw(JOURNAL_KEY);
+  if (!read.ok) return result([], [], 0, [{ key: JOURNAL_KEY, ...read }]);
+  if (read.raw == null) return loadLegacy();
+
   try {
-    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-    localStorage.setItem(BLOCKS_KEY, JSON.stringify(blocks));
-    localStorage.setItem(VERSION_KEY, String(version));
-    return { ok: true };
+    const data = JSON.parse(read.raw);
+    if (!data || !Array.isArray(data.entries) || !Array.isArray(data.blocks)) throw new Error("Not a journal");
+    return result(data.entries, data.blocks, Number(data.version) || 0, []);
+  } catch (err) {
+    return result([], [], 0, [{ key: JOURNAL_KEY, reason: "corrupt", raw: read.raw, error: err }]);
+  }
+}
+
+export function saveJournal({ entries, blocks, version }) {
+  const text = JSON.stringify({ version, entries, blocks });
+  try {
+    // Writing an unchanged journal would still wake every other open tab.
+    if (localStorage.getItem(JOURNAL_KEY) === text) return { ok: true };
+    localStorage.setItem(JOURNAL_KEY, text);
   } catch (err) {
     console.error("Marginalia: save failed", err);
     return { ok: false, error: err };
   }
+  try {
+    localStorage.removeItem(LEGACY_ENTRIES_KEY);
+    localStorage.removeItem(LEGACY_BLOCKS_KEY);
+    localStorage.removeItem(LEGACY_VERSION_KEY);
+  } catch {
+    // The journal is saved; stale legacy keys are ignored once it exists.
+  }
+  return { ok: true };
+}
+
+// True when a storage event from another tab touched the journal.
+export function isJournalKey(key) {
+  return key === JOURNAL_KEY || key === null;
 }
 
 export function exportJournal({ entries, blocks, version }) {

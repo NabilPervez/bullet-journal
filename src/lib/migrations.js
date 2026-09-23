@@ -1,6 +1,7 @@
 import { toISODate } from "./dates";
 import { ENTRY_TYPES, dateFieldFor } from "./model";
 import { normalizeRepeat } from "./recurrence";
+import { SLOT_MINUTES } from "./constants";
 
 export const SCHEMA_VERSION = 2;
 
@@ -76,7 +77,7 @@ function toV1(state) {
       entryId: b.entryId,
       date: b.date,
       startMinute: Number(b.startMinute) || 0,
-      durationMinutes: Number(b.durationMinutes) || 30,
+      durationMinutes: Number(b.durationMinutes) || SLOT_MINUTES,
     }));
 
   const blockByEntry = new Map(blocks.map((b) => [b.entryId, b]));

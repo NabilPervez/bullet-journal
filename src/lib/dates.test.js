@@ -43,9 +43,11 @@ describe("hhmmToStartMinute", () => {
     }
   });
 
-  // Known P1: times outside 06:00–22:00 are clamped into the window and the
-  // clamped value is then written back over the entry, destroying the original.
-  it.todo("returns null for times outside the grid window instead of clamping");
+  it("returns null for times outside the grid window instead of clamping", () => {
+    expect(hhmmToStartMinute("05:30")).toBeNull();
+    expect(hhmmToStartMinute("22:00")).toBeNull();
+    expect(hhmmToStartMinute("23:15")).toBeNull();
+  });
 });
 
 describe("minutesToLabel", () => {

@@ -39,11 +39,44 @@ function syncEventToBlock(entries, entryId, date, startMinute) {
   );
 }
 
+// Actions that change the journal itself, as opposed to loading it or
+// tracking whether it saved.
+const EDITS = new Set([
+  "add-entry",
+  "update-entry",
+  "toggle-done",
+  "delete-entry",
+  "schedule-entry",
+  "move-block",
+  "resize-block",
+  "unschedule-block",
+  "undo",
+]);
+
 export function journalReducer(state, action) {
+  const isEdit = EDITS.has(action.type);
+
+  // A read-only journal is one we failed to read. Edits would show on screen
+  // and never be saved, so refuse them rather than pretend.
+  if (isEdit && state.status === "readonly") return state;
+
+  const next = reduce(state, action);
+
+  // An undo point restores whole lists, so it is only safe until something
+  // else changes them. Any later edit retires it instead of letting Undo
+  // erase that edit.
+  if (isEdit && next !== state && state.undo && next.undo === state.undo) {
+    return { ...next, undo: null };
+  }
+  return next;
+}
+
+function reduce(state, action) {
   switch (action.type) {
     case "hydrate": {
       return {
         ...state,
+        undo: null,
         entries: sortEntries(action.entries),
         blocks: action.blocks,
         version: action.version,
@@ -76,29 +109,34 @@ export function journalReducer(state, action) {
       if (!existing) return state;
       const merged = { ...existing, ...action.patch };
       let blocks = state.blocks;
+      const block = state.blocks.find((b) => b.id === merged.scheduledBlockId);
+      const startMinute =
+        merged.type === "event" && merged.eventDate ? hhmmToStartMinute(merged.eventTime) : null;
 
-      if (merged.type === "event" && merged.eventDate && merged.eventTime) {
-        const startMinute = hhmmToStartMinute(merged.eventTime);
-        if (startMinute !== null) {
-          const block = state.blocks.find((b) => b.id === merged.scheduledBlockId);
-          if (block) {
-            blocks = state.blocks.map((b) =>
-              b.id === block.id ? { ...b, date: merged.eventDate, startMinute } : b
-            );
-          } else {
-            merged.scheduledBlockId = action.blockId;
-            blocks = [
-              ...state.blocks,
-              {
-                id: action.blockId,
-                entryId: merged.id,
-                date: merged.eventDate,
-                startMinute,
-                durationMinutes: DEFAULT_EVENT_DURATION,
-              },
-            ];
-          }
+      if (startMinute !== null) {
+        if (block) {
+          blocks = state.blocks.map((b) =>
+            b.id === block.id ? { ...b, date: merged.eventDate, startMinute } : b
+          );
+        } else {
+          merged.scheduledBlockId = action.blockId;
+          blocks = [
+            ...state.blocks,
+            {
+              id: action.blockId,
+              entryId: merged.id,
+              date: merged.eventDate,
+              startMinute,
+              durationMinutes: DEFAULT_EVENT_DURATION,
+            },
+          ];
         }
+      } else if (block && (existing.type === "event" || merged.type === "note")) {
+        // An event's block comes from its date and time; once those no longer
+        // place it on the grid, the block goes too. A note has no place on the
+        // grid at all. A task's hand-placed block is left alone.
+        blocks = state.blocks.filter((b) => b.id !== block.id);
+        merged.scheduledBlockId = null;
       }
 
       return { ...state, entries: replaceEntry(state.entries, action.id, () => merged), blocks };

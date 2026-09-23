@@ -13,9 +13,10 @@ export function hhmmToStartMinute(hhmm) {
   if (Number.isNaN(h) || Number.isNaN(m)) return null;
   const totalFromMidnight = h * 60 + m;
   const maxStart = SLOTS_PER_DAY * SLOT_MINUTES - SLOT_MINUTES;
-  let startMinute = totalFromMidnight - START_HOUR * 60;
-  if (startMinute < 0) startMinute = 0;
-  if (startMinute > maxStart) startMinute = maxStart;
+  const startMinute = totalFromMidnight - START_HOUR * 60;
+  // Off the grid is null, not the nearest edge: a clamped value got written
+  // back over the entry and a 23:00 event quietly became 21:30.
+  if (startMinute < 0 || startMinute > maxStart) return null;
   return startMinute;
 }
 

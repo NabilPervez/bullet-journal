@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 // Pointer-based dragging, replacing the HTML5 drag-and-drop API — which
 // mobile browsers never fire, so scheduling was mouse-only in an app built to
@@ -21,7 +21,9 @@ export function useDragSession(onDrop) {
   const [drag, setDrag] = useState(null);
   const session = useRef(null);
   const onDropRef = useRef(onDrop);
-  onDropRef.current = onDrop;
+  useLayoutEffect(() => {
+    onDropRef.current = onDrop;
+  });
 
   const finish = useCallback((commit) => {
     const s = session.current;

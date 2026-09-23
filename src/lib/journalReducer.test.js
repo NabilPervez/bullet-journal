@@ -207,3 +207,84 @@ describe("recurring entries", () => {
     expect(next.entries[0].done).toBe(true);
   });
 });
+
+describe("undo only covers the action that set it", () => {
+  it("drops the undo point when a later change lands, so undo cannot erase it", () => {
+    let s = add(ready(), entry({ id: "a", text: "A" }));
+    s = journalReducer(s, { type: "delete-entry", id: "a" });
+    expect(s.undo).not.toBeNull();
+    s = add(s, entry({ id: "b", text: "B", createdAt: 2000 }));
+    expect(s.undo).toBeNull();
+    s = journalReducer(s, { type: "undo" });
+    expect(s.entries.map((e) => e.id)).toEqual(["b"]);
+  });
+
+  it("keeps the undo point across save bookkeeping", () => {
+    let s = add(ready(), entry({ id: "a" }));
+    s = journalReducer(s, { type: "delete-entry", id: "a" });
+    s = journalReducer(s, { type: "save-ok" });
+    expect(s.undo).not.toBeNull();
+  });
+
+  it("clears the undo point on hydrate", () => {
+    let s = add(ready(), entry({ id: "a" }));
+    s = journalReducer(s, { type: "delete-entry", id: "a" });
+    s = journalReducer(s, { type: "hydrate", entries: [], blocks: [], version: 2, readonly: false });
+    expect(s.undo).toBeNull();
+  });
+});
+
+describe("read-only journal", () => {
+  it("ignores edits, so nothing appears that will never be saved", () => {
+    const s = ready({ status: "readonly" });
+    expect(add(s, entry({ id: "a" }))).toBe(s);
+    const withOne = { ...s, entries: [entry({ id: "a" })] };
+    expect(journalReducer(withOne, { type: "delete-entry", id: "a" })).toBe(withOne);
+    expect(journalReducer(withOne, { type: "toggle-done", id: "a", today: "2026-01-01", now: 1, nextId: "n", nextBlockId: "nb" })).toBe(withOne);
+  });
+
+  it("still accepts an import", () => {
+    const s = ready({ status: "readonly" });
+    const next = journalReducer(s, { type: "hydrate", entries: [entry()], blocks: [], version: 2, readonly: false });
+    expect(next.status).toBe("ready");
+  });
+});
+
+describe("events outside the grid", () => {
+  it("keeps a late event off the grid instead of moving it to 21:30", () => {
+    const s = add(ready(), entry({ id: "late", type: "event", eventDate: "2026-01-05", eventTime: "23:00" }));
+    expect(s.blocks).toEqual([]);
+    expect(s.entries[0].eventTime).toBe("23:00");
+    expect(s.entries[0].scheduledBlockId).toBeNull();
+  });
+
+  it("takes an event off the grid when its time is edited out of range", () => {
+    let s = add(ready(), entry({ id: "ev", type: "event", eventDate: "2026-01-05", eventTime: "09:00" }));
+    s = journalReducer(s, { type: "update-entry", id: "ev", patch: { eventTime: "05:00" }, blockId: "x" });
+    expect(s.blocks).toEqual([]);
+    expect(s.entries[0].eventTime).toBe("05:00");
+    expect(s.entries[0].scheduledBlockId).toBeNull();
+  });
+});
+
+describe("update-entry keeps blocks honest", () => {
+  const timed = () => add(ready(), entry({ id: "ev", type: "event", eventDate: "2026-01-05", eventTime: "09:00" }));
+
+  it("removes the block when an event's time is cleared", () => {
+    const s = journalReducer(timed(), { type: "update-entry", id: "ev", patch: { eventTime: null }, blockId: "x" });
+    expect(s.blocks).toEqual([]);
+    expect(s.entries[0].scheduledBlockId).toBeNull();
+  });
+
+  it("removes the block when an event becomes a note", () => {
+    const s = journalReducer(timed(), { type: "update-entry", id: "ev", patch: { type: "note" }, blockId: "x" });
+    expect(s.blocks).toEqual([]);
+  });
+
+  it("keeps a task's manually scheduled block when its text changes", () => {
+    let s = add(ready(), entry({ id: "t" }));
+    s = journalReducer(s, { type: "schedule-entry", entryId: "t", date: "2026-01-05", startMinute: 60, blockId: "b1" });
+    s = journalReducer(s, { type: "update-entry", id: "t", patch: { text: "Renamed" }, blockId: "x" });
+    expect(s.blocks.map((b) => b.id)).toEqual(["b1"]);
+  });
+});

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { download, parseJSON, toJSON, toMarkdown } from "../lib/transfer";
 
-export function JournalData({ entries, blocks, version, onImport }) {
+export function JournalData({ entries, blocks, version, onImport, onExported }) {
   const fileRef = useRef(null);
   const [message, setMessage] = useState(null);
   const stamp = new Date().toISOString().slice(0, 10);
@@ -42,7 +42,11 @@ export function JournalData({ entries, blocks, version, onImport }) {
       <div className="row gap-2 wrap">
         <button
           className="btn btn-secondary"
-          onClick={() => download(`marginalia-${stamp}.json`, toJSON({ entries, blocks, version }), "application/json")}
+          onClick={() => {
+            download(`marginalia-${stamp}.json`, toJSON({ entries, blocks, version }), "application/json");
+            // Only JSON counts as a backup: it is the one format Import reads.
+            onExported?.();
+          }}
         >
           Export JSON
         </button>

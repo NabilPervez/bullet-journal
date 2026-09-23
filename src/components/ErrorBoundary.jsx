@@ -1,4 +1,6 @@
 import { Component } from "react";
+import { JOURNAL_KEY } from "../lib/storage";
+import { download } from "../lib/transfer";
 
 // A render error used to blank the page. The journal is still in storage, so
 // the way out is: reload, or take a copy first.
@@ -17,16 +19,15 @@ export class ErrorBoundary extends Component {
   }
 
   handleExport = () => {
-    const data = {
-      entries: localStorage.getItem("marginalia:entries"),
-      blocks: localStorage.getItem("marginalia:blocks"),
-    };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `marginalia-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    // The raw stored value, untouched: if the crash came from bad data, a
+    // copy that went back through the app's own code could lose it.
+    let raw = null;
+    try {
+      raw = localStorage.getItem(JOURNAL_KEY);
+    } catch {
+      raw = null;
+    }
+    download(`marginalia-backup-${new Date().toISOString().slice(0, 10)}.json`, raw ?? "{}", "application/json");
   };
 
   render() {

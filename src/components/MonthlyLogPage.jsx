@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { daysInMonthCount, formatDateShort, formatTimeShort, getMonthInfo, isoFor } from "../lib/dates";
 import { ENTRY_TYPES } from "../lib/model";
 import { projectionsBetween } from "../lib/projection";
@@ -17,10 +17,9 @@ export function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry
 
   // Where repeating entries will land this month, shown alongside the real
   // ones so a monthly cadence is visible before it happens.
-  const projections = useMemo(
-    () => projectionsBetween(entries, isoFor(info.year, info.monthIndex, 1), isoFor(info.year, info.monthIndex, numDays)),
-    [entries, info.year, info.monthIndex, numDays]
-  );
+  const monthStart = isoFor(info.year, info.monthIndex, 1);
+  const monthEnd = isoFor(info.year, info.monthIndex, numDays);
+  const projections = projectionsBetween(entries, monthStart, monthEnd);
 
   function dayItems(day) {
     const iso = isoFor(info.year, info.monthIndex, day);

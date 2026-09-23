@@ -3,6 +3,7 @@ import { ROW_HEIGHT, ROW_HEIGHT_COMPACT, RESIZE_SNAP_MINUTES, SLOTS_PER_DAY, SLO
 import { visibleSlotRange } from "../lib/agenda";
 import { minutesToLabel, startMinuteToHHMM, toISODate } from "../lib/dates";
 import { ENTRY_TYPES } from "../lib/model";
+import { useToday } from "../hooks/useToday";
 
 export function DayAgenda({
   entries,
@@ -25,13 +26,12 @@ export function DayAgenda({
 
   // A 26px row is shorter than a fingertip; on a phone the rows are 44.
   const rowHeight = compact ? ROW_HEIGHT_COMPACT : ROW_HEIGHT;
+  const today = useToday();
 
   const date = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + dayOffset);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, [dayOffset]);
+    const [y, m, d] = today.split("-").map(Number);
+    return new Date(y, m - 1, d + dayOffset);
+  }, [dayOffset, today]);
   const dateStr = toISODate(date);
   const isToday = dayOffset === 0;
   const dayLabel = date.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });

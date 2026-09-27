@@ -4,6 +4,7 @@ import { markExported, needsBackup, readBackupState, snoozeBackup } from "./lib/
 import { migrate, SCHEMA_VERSION } from "./lib/migrations";
 import { initialState, journalReducer } from "./lib/journalReducer";
 import { uid } from "./lib/model";
+import { normalizeSubtasks } from "./lib/subtasks";
 import { SLOT_MINUTES } from "./lib/constants";
 import { monthOffsetFromKey, toISODate } from "./lib/dates";
 import { anchorRepeat } from "./lib/recurrence";
@@ -125,6 +126,9 @@ export default function App() {
       eventLocation: meta.eventLocation || null,
       repeat: meta.repeat ? anchorRepeat(meta.repeat, meta.dueDate || meta.eventDate) : null,
       spawnedId: null,
+      completedAt: null,
+      subtasks: normalizeSubtasks(meta.subtasks),
+      store: meta.store?.trim() || null,
     };
     dispatch({ type: "add-entry", entry, blockId: uid() });
     return entry;

@@ -1,4 +1,4 @@
-import { entryRelevantDate, ENTRY_TYPES, SIGNIFIERS } from "./model";
+import { entryRelevantDate, ENTRY_TYPES, SIGNIFIERS, hasDueDate } from "./model";
 import { formatTimeShort, monthLabelFromKey } from "./dates";
 import { describeRepeat } from "./recurrence";
 
@@ -52,7 +52,7 @@ function lineFor(entry) {
   const signifier = SIGNIFIERS[entry.signifier || "none"]?.char;
   const bits = [];
 
-  if (entry.type === "task" || entry.type === "goal") bits.push(entry.done ? "- [x]" : "- [ ]");
+  if (hasDueDate(entry.type)) bits.push(entry.done ? "- [x]" : "- [ ]");
   else bits.push("-");
 
   bits.push(meta.glyph);
@@ -62,10 +62,14 @@ function lineFor(entry) {
   const trailing = [];
   if (entry.type === "event" && entry.eventTime) trailing.push(formatTimeShort(entry.eventTime));
   if (entry.eventLocation) trailing.push(entry.eventLocation);
+  if (entry.store) trailing.push(`at ${entry.store}`);
   if (entry.type !== "event" && entry.dueDate) trailing.push(`due ${entry.dueDate}`);
   if (entry.repeat) trailing.push(`↻ ${describeRepeat(entry.repeat).toLowerCase()}`);
 
-  return trailing.length ? `${bits.join(" ")} — ${trailing.join(", ")}` : bits.join(" ");
+  const line = trailing.length ? `${bits.join(" ")} — ${trailing.join(", ")}` : bits.join(" ");
+  // Sub-tasks nest under their entry as an indented Markdown checklist.
+  const items = (entry.subtasks ?? []).map((s) => `\n  - [${s.done ? "x" : " "}] ${s.text}`);
+  return line + items.join("");
 }
 
 export function toMarkdown({ entries }, { title = "Marginalia" } = {}) {

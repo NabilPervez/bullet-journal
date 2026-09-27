@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { daysInMonthCount, formatDateShort, formatTimeShort, getMonthInfo, isoFor } from "../lib/dates";
-import { ENTRY_TYPES } from "../lib/model";
+import { ENTRY_TYPES, hasDueDate } from "../lib/model";
 import { projectionsBetween } from "../lib/projection";
 import { describeRepeat } from "../lib/recurrence";
 
@@ -24,12 +24,12 @@ export function MonthlyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry
   function dayItems(day) {
     const iso = isoFor(info.year, info.monthIndex, day);
     const on = (e) =>
-      (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso);
+      (e.type === "event" && e.eventDate === iso) || (hasDueDate(e.type) && e.dueDate === iso);
     return [...entries.filter(on), ...projections.filter(on)];
   }
 
   const brainDump = entries.filter(
-    (e) => (e.type === "task" || e.type === "goal") && !e.done && (!e.dueDate || e.dueDate.startsWith(info.key))
+    (e) => hasDueDate(e.type) && !e.done && (!e.dueDate || e.dueDate.startsWith(info.key))
   );
 
   async function submitDay(day) {

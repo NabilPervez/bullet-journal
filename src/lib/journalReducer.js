@@ -1,4 +1,5 @@
 import { DEFAULT_EVENT_DURATION, SLOT_MINUTES } from "./constants";
+import { resetSubtasks } from "./subtasks";
 import { formatDateShort, hhmmToStartMinute, startMinuteToHHMM } from "./dates";
 import { dateFieldFor } from "./model";
 import { nextOccurrence } from "./recurrence";
@@ -173,6 +174,8 @@ function reduce(state, action) {
           createdAt: action.now ?? entry.createdAt,
           done: false,
           completedAt: null,
+          // The next run of a repeating list starts with nothing ticked.
+          subtasks: resetSubtasks(entry.subtasks ?? [], (i) => `${action.nextId}-${i}`),
           spawnedId: null,
           scheduledBlockId: null,
           [field]: nextDate,

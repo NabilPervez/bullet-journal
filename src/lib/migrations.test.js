@@ -86,7 +86,7 @@ describe("v0 → v1", () => {
 describe("v1 → v2", () => {
   it("gives every entry an explicit repeat rule and spawn pointer", () => {
     const { entries, version } = migrate({ entries: [{ id: "a", text: "x", type: "task", createdAt: 5 }], blocks: [] }, 1);
-    expect(version).toBe(2);
+    expect(version).toBe(SCHEMA_VERSION);
     expect(entries[0]).toMatchObject({ repeat: null, spawnedId: null });
   });
 
@@ -100,5 +100,28 @@ describe("v1 → v2", () => {
     }, 1);
     expect(entries[0].repeat).toEqual({ every: 6, unit: "month" });
     expect(entries[1].repeat).toBeNull();
+  });
+});
+
+describe("v2 → v3", () => {
+  it("gives every entry an empty checklist and no store", () => {
+    const { entries, version } = migrate({ entries: [{ id: "a", text: "x", type: "task", createdAt: 5 }], blocks: [] }, 2);
+    expect(version).toBe(3);
+    expect(entries[0]).toMatchObject({ subtasks: [], store: null });
+  });
+
+  it("keeps a well-formed shopping list and drops broken items", () => {
+    const raw = {
+      id: "s", text: "Weekly shop", type: "shopping", createdAt: 5, store: " Costco ",
+      subtasks: [{ id: "1", text: "Milk", done: false }, { id: "2", text: "" }],
+    };
+    const { entries } = migrate({ entries: [raw], blocks: [] }, 2);
+    expect(entries[0].store).toBe("Costco");
+    expect(entries[0].subtasks).toEqual([{ id: "1", text: "Milk", done: false }]);
+  });
+
+  it("keeps a shopping entry's type instead of turning it into a note", () => {
+    const { entries } = migrate({ entries: [{ id: "s", text: "x", type: "shopping", createdAt: 5 }], blocks: [] }, 0);
+    expect(entries[0].type).toBe("shopping");
   });
 });

@@ -1,19 +1,16 @@
-import { ENTRY_TYPES, entryRelevantDate } from "./model";
+import { ENTRY_TYPES, dateFieldFor, entryRelevantDate } from "./model";
 
 // The order entries are bundled in. Goals frame the day, tasks are the work,
 // events are fixed points, notes are the record.
-export const TYPE_ORDER = ["goal", "task", "event", "note"];
+export const TYPE_ORDER = ["goal", "task", "shopping", "event", "note"];
 
 // A sortable key: the date an entry is filed under, plus its time if it has
 // one. Anything undated sorts after everything dated — no date means no
 // deadline pressing on it.
 export function scheduleKey(entry) {
   const date = entryRelevantDate(entry);
-  const dated =
-    (entry.type === "event" && entry.eventDate) ||
-    ((entry.type === "task" || entry.type === "goal") && entry.dueDate);
-
-  if (!dated) return "9999-99-99 99:99";
+  const field = dateFieldFor(entry.type);
+  if (!field || !entry[field]) return "9999-99-99 99:99";
   return `${date} ${entry.type === "event" && entry.eventTime ? entry.eventTime : "00:00"}`;
 }
 
@@ -29,6 +26,7 @@ function bundle(entries) {
   return TYPE_ORDER.map((type) => ({
     type,
     label: ENTRY_TYPES[type].label,
+    heading: ENTRY_TYPES[type].heading ?? `${ENTRY_TYPES[type].label}s`,
     glyph: ENTRY_TYPES[type].glyph,
     items: entries.filter((e) => e.type === type).sort(bySoonest),
   })).filter((group) => group.items.length > 0);
@@ -56,10 +54,8 @@ function daysBetween(fromISO, toISO) {
 }
 
 function ownDate(entry) {
-  const dated =
-    (entry.type === "event" && entry.eventDate) ||
-    ((entry.type === "task" || entry.type === "goal") && entry.dueDate);
-  return dated ? entryRelevantDate(entry) : null;
+  const field = dateFieldFor(entry.type);
+  return field && entry[field] ? entry[field] : null;
 }
 
 // Undated work has no deadline pressing on it, so it waits in Future.

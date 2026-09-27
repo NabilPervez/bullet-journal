@@ -8,6 +8,8 @@ export const ENTRY_TYPES = {
   goal: { glyph: "✦", label: "Goal", plural: "goals" },
   task: { glyph: "•", label: "Task", plural: "tasks" },
   event: { glyph: "○", label: "Event", plural: "events" },
+  // A task with a store and a list of things to buy.
+  shopping: { glyph: "$", label: "Shopping", plural: "shopping lists", heading: "Shopping" },
   note: { glyph: "–", label: "Note", plural: "notes" },
 };
 
@@ -24,11 +26,17 @@ const DATE_FIELD = {
   goal: "dueDate",
   task: "dueDate",
   event: "eventDate",
+  shopping: "dueDate",
   note: null,
 };
 
 export function dateFieldFor(type) {
   return DATE_FIELD[type] ?? null;
+}
+
+// Kinds that are due on a day rather than happening at a time.
+export function hasDueDate(type) {
+  return dateFieldFor(type) === "dueDate";
 }
 
 export function isDatedType(type) {

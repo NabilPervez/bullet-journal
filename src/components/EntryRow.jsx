@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useSwipeActions } from "../hooks/useSwipeActions";
 import { SWIPE_THRESHOLD_PX } from "../lib/gestures";
-import { ENTRY_TYPES, SIGNIFIERS, isSchedulable } from "../lib/model";
+import { ENTRY_TYPES, SIGNIFIERS, hasDueDate, isSchedulable } from "../lib/model";
+import { hasChecklist, subtaskProgress } from "../lib/subtasks";
 import { formatDateShort, formatTimeShort } from "../lib/dates";
 import { anchorRepeat, describeRepeat } from "../lib/recurrence";
 import { RepeatPicker } from "./RepeatPicker";
+import { Checklist } from "./Checklist";
+import { StorePicker } from "./StorePicker";
 
 export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStartDrag, onSchedule, showType = true }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -41,7 +44,9 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
     onSave({
       text: trimmed,
       signifier: draft.signifier === "none" ? null : draft.signifier,
-      dueDate: entry.type === "task" || entry.type === "goal" ? draft.dueDate || null : entry.dueDate,
+      dueDate: hasDueDate(entry.type) ? draft.dueDate || null : entry.dueDate,
+      store: entry.type === "shopping" ? draft.store.trim() || null : entry.store ?? null,
+      subtasks: hasChecklist(entry.type) ? draft.subtasks : entry.subtasks ?? [],
       eventDate: entry.type === "event" ? draft.eventDate || null : entry.eventDate,
       eventTime: entry.type === "event" ? draft.eventTime || null : entry.eventTime,
       eventLocation: entry.type === "event" ? draft.eventLocation || null : entry.eventLocation,
@@ -57,7 +62,15 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
     tickets.push(formatDateShort(entry.eventDate) + (entry.eventTime ? ` · ${formatTimeShort(entry.eventTime)}` : ""));
   }
   if (entry.type === "event" && entry.eventLocation) tickets.push(entry.eventLocation);
-  if ((entry.type === "task" || entry.type === "goal") && entry.dueDate) tickets.push(`Due ${formatDateShort(entry.dueDate)}`);
+  if (entry.type === "shopping" && entry.store) tickets.push(`at ${entry.store}`);
+  if (hasDueDate(entry.type) && entry.dueDate) tickets.push(`Due ${formatDateShort(entry.dueDate)}`);
+
+  const subtasks = entry.subtasks ?? [];
+  const progress = subtaskProgress(subtasks);
+  // A shopping list always shows its items (and the box to add one); a task
+  // only once it has been broken into steps, so a plain task stays one line.
+  const showChecklist = hasChecklist(entry.type) && (entry.type === "shopping" || subtasks.length > 0);
+  const itemsLabel = entry.type === "shopping" ? "Items" : "Sub-tasks";
 
   if (isEditing) {
     return (
@@ -99,13 +112,32 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
               </div>
             </div>
           ) : (
-            (entry.type === "task" || entry.type === "goal") && (
+            hasDueDate(entry.type) && (
               <div className="field">
                 <span className="field-label">Due date</span>
                 <input className="input" type="date" value={draft.dueDate} aria-label="Due date"
                   onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))} />
               </div>
             )
+          )}
+
+          {entry.type === "shopping" && (
+            <StorePicker
+              value={draft.store}
+              onChange={(store) => setDraft((d) => ({ ...d, store }))}
+              idPrefix={`edit-${entry.id}-store`}
+            />
+          )}
+
+          {hasChecklist(entry.type) && (
+            <Checklist
+              items={draft.subtasks}
+              onChange={(list) => setDraft((d) => ({ ...d, subtasks: list }))}
+              label={itemsLabel}
+              addLabel={entry.type === "shopping" ? "Add an item to buy" : "Add a sub-task"}
+              placeholder={entry.type === "shopping" ? "Add an item, press Enter" : "Add a step, press Enter"}
+              idPrefix={`edit-${entry.id}-items`}
+            />
           )}
 
           {entry.type !== "note" && (
@@ -226,10 +258,20 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
                 ↻ {describeRepeat(entry.repeat)}
               </span>
             )}
+            {progress.total > 0 && (
+              <span
+                className="ticket"
+                data-complete={progress.complete ? "true" : "false"}
+                title={`${progress.done} of ${progress.total} ${itemsLabel.toLowerCase()} done`}
+              >
+                ☑ {progress.done}/{progress.total}
+              </span>
+            )}
             {entry.scheduledBlockId && (
               <span className="ticket" style={{ color: "var(--accent-ink)" }} title="On the schedule">▸ Scheduled</span>
             )}
           </div>
+
         </div>
 
         <div className="entry-actions">
@@ -260,6 +302,21 @@ export function EntryRow({ entry, onToggle, onDelete, onSave, isDragging, onStar
             ✕
           </button>
         </div>
+        {/* Ticking an item saves at once. Double-click edits the entry
+            everywhere else on the row, but not here, where fast taps on
+            items would otherwise open the editor. */}
+        {showChecklist && (
+          <div className="entry-checklist" onDoubleClick={(e) => e.stopPropagation()}>
+            <Checklist
+              items={subtasks}
+              onChange={(list) => onSave({ subtasks: list })}
+              label={itemsLabel}
+              addLabel={entry.type === "shopping" ? `Add an item to ${entry.text}` : `Add a sub-task to ${entry.text}`}
+              placeholder={entry.type === "shopping" ? "Add an item" : "Add a step"}
+              idPrefix={`row-${entry.id}-items`}
+            />
+          </div>
+        )}
       </div>
     </li>
   );
@@ -274,5 +331,7 @@ function toDraft(entry) {
     eventTime: entry.eventTime || "",
     eventLocation: entry.eventLocation || "",
     repeat: entry.repeat || null,
+    store: entry.store || "",
+    subtasks: entry.subtasks ?? [],
   };
 }

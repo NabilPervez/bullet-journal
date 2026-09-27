@@ -288,3 +288,25 @@ describe("update-entry keeps blocks honest", () => {
     expect(s.blocks.map((b) => b.id)).toEqual(["b1"]);
   });
 });
+
+describe("repeating checklists", () => {
+  it("starts the next run of a repeating shopping list with nothing ticked", () => {
+    const shop = entry({
+      id: "shop", type: "shopping", text: "Costco run", store: "Costco", dueDate: "2026-09-17",
+      repeat: { every: 1, unit: "week" },
+      subtasks: [{ id: "a", text: "Milk", done: true }, { id: "b", text: "Eggs", done: false }],
+    });
+    const state = journalReducer({ ...initialState, status: "ready", entries: [shop] }, {
+      type: "toggle-done", id: "shop", today: "2026-09-17", now: 5000, nextId: "next", nextBlockId: "nb",
+    });
+
+    const done = state.entries.find((e) => e.id === "shop");
+    const next = state.entries.find((e) => e.id === "next");
+    expect(done.subtasks.map((s) => s.done)).toEqual([true, false]); // the record of what happened stays
+    expect(next).toMatchObject({ store: "Costco", dueDate: "2026-09-24" });
+    expect(next.subtasks).toEqual([
+      { id: "next-0", text: "Milk", done: false },
+      { id: "next-1", text: "Eggs", done: false },
+    ]);
+  });
+});

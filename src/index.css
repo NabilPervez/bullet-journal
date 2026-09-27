@@ -24,6 +24,7 @@
   --blaze: #FF6B3D;
   --cobalt: #58A6FF;
   --amber: #FFC34D;
+  --grape: #C39BFF;
   --flare: #FF4D7E;
 
   --accent: var(--volt);
@@ -37,6 +38,7 @@
   --type-task: var(--volt);
   --type-event: var(--cobalt);
   --type-note: var(--amber);
+  --type-shopping: var(--grape);
 
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -91,6 +93,7 @@
   --blaze: #F2542D;
   --cobalt: #2B7FE0;
   --amber: #F0A91B;
+  --grape: #A77BF2;
   --flare: #E01E5A;
 
   --shadow-1: 0 1px 2px rgba(20, 20, 26, 0.09);
@@ -339,6 +342,7 @@ h3 {
 .chip[data-type="task"] { --chip-color: var(--type-task); }
 .chip[data-type="event"] { --chip-color: var(--type-event); }
 .chip[data-type="note"] { --chip-color: var(--type-note); }
+.chip[data-type="shopping"] { --chip-color: var(--type-shopping); }
 
 .chip-glyph {
   font-family: var(--font-display);
@@ -395,6 +399,7 @@ h3 {
 .sticker[data-type="task"] { --sticker-color: var(--type-task); }
 .sticker[data-type="event"] { --sticker-color: var(--type-event); }
 .sticker[data-type="note"] { --sticker-color: var(--type-note); }
+.sticker[data-type="shopping"] { --sticker-color: var(--type-shopping); }
 
 .sticker[data-done="true"] {
   background: transparent;
@@ -976,6 +981,7 @@ body.is-dragging {
 .agenda-block[data-type="task"] { --block-color: var(--type-task); }
 .agenda-block[data-type="event"] { --block-color: var(--type-event); }
 .agenda-block[data-type="note"] { --block-color: var(--type-note); }
+.agenda-block[data-type="shopping"] { --block-color: var(--type-shopping); }
 
 .agenda-block-title {
   font-family: var(--font-ui);
@@ -1423,6 +1429,7 @@ body.is-dragging {
 .entry-body[data-type="task"] { border-left: 4px solid var(--type-task); }
 .entry-body[data-type="event"] { border-left: 4px solid var(--type-event); }
 .entry-body[data-type="note"] { border-left: 4px solid var(--type-note); }
+.entry-body[data-type="shopping"] { border-left: 4px solid var(--type-shopping); }
 
 /* =========================================================================
    Motion
@@ -1699,4 +1706,107 @@ a.btn {
 
 @media (prefers-reduced-motion: reduce) {
   .horizon-completed > summary::before { transition: none; }
+}
+
+/* ---------- Checklists (sub-tasks and shopping items) ---------- */
+
+.checklist {
+  padding-top: var(--s1);
+}
+
+.checklist-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  border-bottom: 1px dashed var(--line);
+}
+
+.checklist-item:last-child { border-bottom: none; }
+
+/* 44px target around a smaller box: easy to hit, quieter than the entry's
+   own checkbox so the two levels read as parent and child. */
+.checklist-check {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.check-box-sm {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.checklist-check:hover .check-box { border-color: var(--accent); }
+
+.checklist-check[aria-checked="true"] .check-box {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.checklist-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.checklist-item[data-done="true"] .checklist-text {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+/* Remove stays out of the way until the item is hovered or focused. On touch
+   there is no hover, so it is always shown there. */
+.checklist-remove { opacity: 0.35; }
+.checklist-item:hover .checklist-remove,
+.checklist-remove:focus-visible { opacity: 1; }
+@media (hover: none) { .checklist-remove { opacity: 0.7; } }
+
+.checklist-meter {
+  flex: 1 1 auto;
+  max-width: 120px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.checklist-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms ease;
+}
+
+.ticket[data-complete="true"] { color: var(--accent-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .checklist-meter > span { transition: none; }
+}
+
+/* On a row the checklist takes the card's full width under the entry, lined
+   up with the entry's text rather than squeezed beside the action buttons. */
+.entry-checklist {
+  flex: 1 0 100%;
+  padding-left: calc(44px + var(--s3));
+}
+
+@media (max-width: 480px) {
+  .entry-checklist { padding-left: 0; }
 }

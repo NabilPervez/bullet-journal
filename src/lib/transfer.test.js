@@ -68,4 +68,15 @@ describe("Markdown export", () => {
     const october = md.slice(md.indexOf("## October 2026"));
     expect(october).toContain("Ship the migration");
   });
+
+  it("nests a shopping list's items under it, with the store", () => {
+    const list = toMarkdown({
+      entries: [{
+        id: "s", text: "Weekly shop", type: "shopping", createdAt: new Date(2026, 8, 15, 9).getTime(), done: false,
+        dueDate: "2026-09-15", store: "Target",
+        subtasks: [{ id: "1", text: "Milk", done: true }, { id: "2", text: "Bread", done: false }],
+      }],
+    });
+    expect(list).toContain("- [ ] $ Weekly shop — at Target, due 2026-09-15\n  - [x] Milk\n  - [ ] Bread");
+  });
 });

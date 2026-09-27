@@ -129,9 +129,10 @@ describe("groupForDay", () => {
     expect(completed.items.map((e) => e.id)).toEqual([latest.id, earlier.id, legacy.id]);
   });
 
-  it("bundles each section by kind, in goal / task / event / note order", () => {
+  it("bundles each section by kind, in goal / task / shopping / event / note order", () => {
     const entries = [
       entry({ type: "note" }),
+      entry({ type: "shopping", dueDate: "2027-10-01" }),
       entry({ type: "event", eventDate: "2027-10-01" }),
       entry({ type: "task", dueDate: "2027-10-01" }),
       entry({ type: "goal", dueDate: "2027-10-01" }),

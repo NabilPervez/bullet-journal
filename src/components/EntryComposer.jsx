@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { ENTRY_TYPES, SIGNIFIERS, isDatedType } from "../lib/model";
 import { addInterval, describeRepeat, ROUTINES } from "../lib/recurrence";
 import { toISODate } from "../lib/dates";
+import { hasChecklist } from "../lib/subtasks";
 import { RepeatPicker } from "./RepeatPicker";
+import { Checklist } from "./Checklist";
+import { StorePicker } from "./StorePicker";
 
 // The old composer crammed four type chips, three signifier chips and a
 // divider onto one shelf, then hid the date fields under it. Here each
@@ -17,6 +20,8 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
   const [eventTime, setEventTime] = useState("");
   const [eventLocation, setEventLocation] = useState("");
   const [repeat, setRepeat] = useState(null);
+  const [store, setStore] = useState("");
+  const [subtasks, setSubtasks] = useState([]);
   const [showDetails, setShowDetails] = useState(false);
   const inputRef = useRef(null);
 
@@ -25,7 +30,10 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
   }, [autoFocus]);
 
   const needsDate = type === "event";
-  const canSubmit = Boolean(text.trim()) && (!needsDate || Boolean(eventDate));
+  const isShopping = type === "shopping";
+  // A shopping list can go in with just a store: "Costco" is a whole thought.
+  const title = text.trim() || (isShopping && store.trim() ? `${store.trim()} run` : "");
+  const canSubmit = Boolean(title) && (!needsDate || Boolean(eventDate));
 
   function reset() {
     setText("");
@@ -35,6 +43,8 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
     setEventTime("");
     setEventLocation("");
     setRepeat(null);
+    setStore("");
+    setSubtasks([]);
     setShowDetails(false);
   }
 
@@ -44,7 +54,9 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
     const today = toISODate(new Date());
     const repeating = isDatedType(type) ? repeat : null;
     const due = isDatedType(type) && type !== "event" ? dueDate || (repeating ? today : "") : "";
-    await addEntry(text.trim(), type, {
+    await addEntry(title, type, {
+      store: isShopping ? store : null,
+      subtasks: hasChecklist(type) ? subtasks : [],
       signifier: signifier === "none" ? null : signifier,
       repeat: repeating,
       dueDate: due || null,
@@ -94,7 +106,13 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
       {/* 2 — the thing itself */}
       <div className="field">
         <label className="field-label" htmlFor={idPrefix}>
-          {type === "event" ? "What's happening?" : type === "goal" ? "What are you aiming at?" : "What's on your mind?"}
+          {type === "event"
+            ? "What's happening?"
+            : type === "goal"
+              ? "What are you aiming at?"
+              : isShopping
+                ? "What's the trip? (optional)"
+                : "What's on your mind?"}
         </label>
         <input
           ref={inputRef}
@@ -111,12 +129,28 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
               submit();
             }
           }}
-          placeholder={type === "event" ? "Dentist, 4pm" : "Capture a thought…"}
+          placeholder={type === "event" ? "Dentist, 4pm" : isShopping ? "Weekly groceries" : "Capture a thought…"}
           autoComplete="off"
         />
       </div>
 
-      {!text && (
+      {/* Shopping: where, then what. The list is the point, so it is always
+          open rather than folded under details. */}
+      {isShopping && (
+        <>
+          <StorePicker value={store} onChange={setStore} idPrefix={`${idPrefix}-store`} />
+          <Checklist
+            items={subtasks}
+            onChange={setSubtasks}
+            label="Items"
+            addLabel="Add an item to buy"
+            placeholder="Add an item, press Enter"
+            idPrefix={`${idPrefix}-items`}
+          />
+        </>
+      )}
+
+      {!text && !isShopping && (
         <div className="row gap-2 wrap">
           <span className="meta">Routines</span>
           {ROUTINES.map((routine) => (
@@ -136,7 +170,7 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
           aria-expanded={detailsOpen}
           onClick={() => setShowDetails((open) => !open)}
         >
-          {detailsOpen ? "Hide details" : "Add date, repeat or mark"}
+          {detailsOpen ? "Hide details" : type === "task" ? "Add sub-tasks, date, repeat or mark" : "Add date, repeat or mark"}
         </button>
       )}
 
@@ -192,6 +226,17 @@ export function EntryComposer({ addEntry, onDone, autoFocus = false, idPrefix = 
                 />
               </div>
             )
+          )}
+
+          {type === "task" && (
+            <Checklist
+              items={subtasks}
+              onChange={setSubtasks}
+              label="Sub-tasks"
+              addLabel="Add a sub-task"
+              placeholder="Add a step, press Enter"
+              idPrefix={`${idPrefix}-steps`}
+            />
           )}
 
           {isDatedType(type) && (

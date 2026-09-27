@@ -1,9 +1,10 @@
 import { toISODate } from "./dates";
 import { ENTRY_TYPES, dateFieldFor } from "./model";
 import { normalizeRepeat } from "./recurrence";
+import { normalizeSubtasks } from "./subtasks";
 import { SLOT_MINUTES } from "./constants";
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 // Every entry carries the same keys whatever its type, so a consumer can read
 // entry.dueDate without first knowing what it is looking at.
@@ -25,6 +26,9 @@ const ENTRY_SHAPE = {
   // next occurrence it wrote, so unticking can take that back.
   repeat: null,
   spawnedId: null,
+  // Steps of a task or items on a shopping list, and where to buy them.
+  subtasks: [],
+  store: null,
 };
 
 function noonOf(iso) {
@@ -106,9 +110,23 @@ function toV2(state) {
   };
 }
 
+// v2 → v3: sub-tasks and shopping lists. Every entry gets a checklist,
+// empty unless it already had a well-formed one.
+function toV3(state) {
+  return {
+    entries: state.entries.map((e) => ({
+      ...e,
+      subtasks: normalizeSubtasks(e.subtasks),
+      store: typeof e.store === "string" && e.store.trim() ? e.store.trim() : null,
+    })),
+    blocks: state.blocks,
+  };
+}
+
 const MIGRATIONS = [
   { to: 1, run: toV1 },
   { to: 2, run: toV2 },
+  { to: 3, run: toV3 },
 ];
 
 export function migrate(state, fromVersion = 0) {

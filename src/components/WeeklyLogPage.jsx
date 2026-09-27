@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { toISODate } from "../lib/dates";
-import { ENTRY_TYPES } from "../lib/model";
+import { ENTRY_TYPES, hasDueDate } from "../lib/model";
 import { bySoonest } from "../lib/ordering";
 import { EntryRow } from "./EntryRow";
 import { ProjectedRow } from "./ProjectedRow";
@@ -36,7 +36,7 @@ export function WeeklyLogPage({ entries, addEntry, toggleEntryDone, deleteEntry,
   function dayItems(date) {
     const iso = toISODate(date);
     const on = (e) =>
-      (e.type === "event" && e.eventDate === iso) || ((e.type === "task" || e.type === "goal") && e.dueDate === iso);
+      (e.type === "event" && e.eventDate === iso) || (hasDueDate(e.type) && e.dueDate === iso);
     return [...entries.filter(on), ...projections.filter(on)].sort(bySoonest);
   }
 

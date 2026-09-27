@@ -128,7 +128,7 @@ function TypeGroup({ group, rowProps }) {
     <div className="stack gap-2">
       <div className="row gap-2">
         <span className="sticker sticker-sm sticker-static" data-type={group.type} aria-hidden="true">{group.glyph}</span>
-        <h4 className="eyebrow">{group.label}s</h4>
+        <h4 className="eyebrow">{group.heading}</h4>
         <span className="meta">{group.items.length}</span>
       </div>
       <ul

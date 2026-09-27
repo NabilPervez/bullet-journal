@@ -1606,3 +1606,97 @@ a.btn {
 .entry-text-ghost::after {
   content: none;
 }
+
+/* ---------- Horizons (Today / 1 week / 2 weeks / 1 month / Future) ---------- */
+
+/* Each horizon is its own band with a rule across the top, so the page reads
+   as distinct stretches of time rather than one long list. Distance is shown
+   by fading: Today is full strength and accented, later bands step back. */
+.horizon {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+.horizon-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+
+.horizon-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.horizon-range {
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  color: var(--text-dim);
+}
+
+.horizon-count {
+  margin-left: auto;
+  min-width: 24px;
+  padding: 0 var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.horizon[data-horizon="today"] {
+  padding: var(--s4);
+  border: 2px solid var(--accent-ink);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.horizon[data-horizon="today"] .horizon-title {
+  color: var(--accent-ink);
+  font-size: calc(var(--fs-title) * 1.2);
+}
+
+.horizon[data-horizon="today"] .horizon-count {
+  background: var(--accent-ink);
+  color: var(--surface);
+}
+
+.horizon[data-horizon="week"] .horizon-title { opacity: 0.95; }
+.horizon[data-horizon="twoWeeks"] .horizon-title { opacity: 0.85; }
+.horizon[data-horizon="month"] .horizon-title { opacity: 0.75; }
+.horizon[data-horizon="future"] .horizon-title { opacity: 0.65; }
+
+.horizon-completed {
+  border-top-style: dashed;
+}
+
+.horizon-completed > summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  align-items: center;
+}
+
+.horizon-completed > summary::-webkit-details-marker { display: none; }
+
+.horizon-completed > summary::before {
+  content: "▸";
+  color: var(--text-dim);
+  transition: transform 150ms ease;
+}
+
+.horizon-completed[open] > summary::before { transform: rotate(90deg); }
+
+.horizon-completed .horizon-title { color: var(--text-dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  .horizon-completed > summary::before { transition: none; }
+}

@@ -153,12 +153,13 @@ function reduce(state, action) {
         const removeChild = child && !child.done && !child.spawnedId;
         const entries = state.entries
           .filter((e) => !(removeChild && e.id === child.id))
-          .map((e) => (e.id === entry.id ? { ...e, done: false, spawnedId: removeChild ? null : e.spawnedId } : e));
+          .map((e) => (e.id === entry.id ? { ...e, done: false, completedAt: null, spawnedId: removeChild ? null : e.spawnedId } : e));
         const blocks = removeChild ? state.blocks.filter((b) => b.entryId !== child.id) : state.blocks;
         return { ...state, entries, blocks };
       }
 
-      let entries = replaceEntry(state.entries, entry.id, (e) => ({ ...e, done: true }));
+      // completedAt orders the Completed list, most recent first.
+      let entries = replaceEntry(state.entries, entry.id, (e) => ({ ...e, done: true, completedAt: action.now ?? null }));
       let blocks = state.blocks;
       let label = `Completed "${entry.text}"`;
 
@@ -171,6 +172,7 @@ function reduce(state, action) {
           id: action.nextId,
           createdAt: action.now ?? entry.createdAt,
           done: false,
+          completedAt: null,
           spawnedId: null,
           scheduledBlockId: null,
           [field]: nextDate,

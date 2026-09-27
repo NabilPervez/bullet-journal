@@ -151,8 +151,8 @@ describe("recurring entries", () => {
     const done = next.entries.find((e) => e.id === "oil");
     const upcoming = next.entries.find((e) => e.id === "next");
 
-    expect(done).toMatchObject({ done: true, spawnedId: "next" });
-    expect(upcoming).toMatchObject({ text: "Oil change", done: false, dueDate: "2027-03-17", repeat: { every: 6, unit: "month" } });
+    expect(done).toMatchObject({ done: true, completedAt: 5000, spawnedId: "next" });
+    expect(upcoming).toMatchObject({ text: "Oil change", done: false, completedAt: null, dueDate: "2027-03-17", repeat: { every: 6, unit: "month" } });
     expect(next.undo.label).toContain("Mar 17");
   });
 

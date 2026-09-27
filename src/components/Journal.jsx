@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { EntryComposer } from "./EntryComposer";
 import { EntryRow } from "./EntryRow";
 import { countByType, ENTRY_TYPES } from "../lib/model";
-import { groupForDay } from "../lib/ordering";
-import { toISODate } from "../lib/dates";
+import { groupForDay, HORIZONS } from "../lib/ordering";
+import { formatDateShort, toISODate } from "../lib/dates";
 
 export function Journal({
   entries,
@@ -17,10 +17,9 @@ export function Journal({
   showComposer = true,
 }) {
   const today = toISODate(new Date());
-  const { due, rest, dueCount } = useMemo(() => groupForDay(entries, today), [entries, today]);
+  const { sections, completed } = useMemo(() => groupForDay(entries, today), [entries, today]);
 
   const counts = countByType(entries);
-  const open = entries.filter((e) => !e.done && (e.type === "task" || e.type === "goal")).length;
 
   const rowProps = (entry) => ({
     entry,
@@ -62,27 +61,61 @@ export function Journal({
         </div>
       )}
 
-      {/* What's due today comes first, whatever else is in the journal. */}
-      {dueCount > 0 && (
-        <div className="stack gap-3">
-          <div className="row spread gap-2">
-            <p className="eyebrow" style={{ color: "var(--accent-ink)" }}>Due today</p>
-            <span className="meta">{dueCount}</span>
-          </div>
-          {due.map((group) => (
-            <TypeGroup key={group.type} group={group} rowProps={rowProps} />
-          ))}
-        </div>
-      )}
+      {entries.length > 0 && (
+        <>
+          {/* Every horizon keeps its place on the page; only Today says so
+              when it is empty, because that is the one you look for. */}
+          {sections.map((section) =>
+            section.count > 0 || section.id === "today" ? (
+              <HorizonSection key={section.id} section={section} today={today} rowProps={rowProps} />
+            ) : null
+          )}
 
-      {rest.length > 0 && (
-        <div className="stack gap-3">
-          {dueCount > 0 && <p className="eyebrow">Everything else</p>}
-          {dueCount === 0 && open > 0 && <p className="eyebrow">{open} open</p>}
-          {rest.map((group) => (
-            <TypeGroup key={group.type} group={group} rowProps={rowProps} />
-          ))}
-        </div>
+          {completed.count > 0 && (
+            <details className="horizon horizon-completed" open>
+              <summary className="horizon-head">
+                <span className="horizon-title">Completed</span>
+                <span className="horizon-count">{completed.count}</span>
+              </summary>
+              <ul className="stack gap-2" style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="Completed entries">
+                {completed.items.map((entry) => (
+                  <EntryRow key={entry.id} {...rowProps(entry)} showType />
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+// The dates a horizon covers, e.g. "Sep 28 – Oct 4", so "1 week out" is
+// never a guess.
+function horizonRange(id, today) {
+  const index = HORIZONS.findIndex((h) => h.id === id);
+  const from = index > 0 ? HORIZONS[index - 1].maxDays + 1 : 0;
+  const to = HORIZONS[index].maxDays;
+  const [y, m, d] = today.split("-").map(Number);
+  const at = (n) => formatDateShort(toISODate(new Date(y, m - 1, d + n)));
+  if (id === "today") return at(0);
+  if (to === Infinity) return `${at(from)} on, or no date`;
+  return `${at(from)} – ${at(to)}`;
+}
+
+function HorizonSection({ section, today, rowProps }) {
+  const headingId = `horizon-${section.id}`;
+  return (
+    <section className="horizon" data-horizon={section.id} aria-labelledby={headingId}>
+      <div className="horizon-head">
+        <h3 id={headingId} className="horizon-title">{section.label}</h3>
+        <span className="horizon-range">{horizonRange(section.id, today)}</span>
+        <span className="horizon-count">{section.count}</span>
+      </div>
+      {section.count === 0 ? (
+        <p className="meta">Nothing due today.</p>
+      ) : (
+        section.groups.map((group) => <TypeGroup key={group.type} group={group} rowProps={rowProps} />)
       )}
     </section>
   );
@@ -95,7 +128,7 @@ function TypeGroup({ group, rowProps }) {
     <div className="stack gap-2">
       <div className="row gap-2">
         <span className="sticker sticker-sm sticker-static" data-type={group.type} aria-hidden="true">{group.glyph}</span>
-        <h3 className="eyebrow">{group.label}s</h3>
+        <h4 className="eyebrow">{group.label}s</h4>
         <span className="meta">{group.items.length}</span>
       </div>
       <ul

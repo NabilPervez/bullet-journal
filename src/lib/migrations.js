@@ -13,6 +13,8 @@ const ENTRY_SHAPE = {
   type: "note",
   createdAt: 0,
   done: false,
+  // When it was ticked off; orders the Completed list. Older entries have none.
+  completedAt: null,
   scheduledBlockId: null,
   signifier: null,
   dueDate: null,
